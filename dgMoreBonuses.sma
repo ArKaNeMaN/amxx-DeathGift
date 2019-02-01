@@ -46,6 +46,10 @@ public awDgFwdTouchPre(id, ent){
 	return AW_DG_STOP;
 }
 
+randBonus(){
+	
+}
+
 cfgExec(){
 	new pCvars[cvars];
 	pCvars[cMoneyRarity] = create_cvar("awDgMbMoneyRarity", "0.1", FCVAR_NONE, "Редкость выпадения денег");
