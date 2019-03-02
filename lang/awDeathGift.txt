@@ -1,0 +1,11 @@
+[en]
+GIFT_TAKE = You picked up a gift and received
+GIFT_TAKE_EMPTY = You picked up an empty gift
+
+[ru]
+GIFT_TAKE = Вы подобрали подарок и получили
+GIFT_TAKE_EMPTY = Вы подобрали пустой подарок
+
+[ua]
+GIFT_TAKE = Ви підібрали подарунок та отримали
+GIFT_TAKE_EMPTY = Ви підібрали порожній подарунок

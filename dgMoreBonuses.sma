@@ -1,10 +1,13 @@
 #include <amxmodx>
+#include <cstrike>
 #include <awDeathGift>
 
 enum cvars{
+	
 	cMoneyRarity,
 	cMoneyMin,
 	cMoneyMax,
+	
 	cHPRarity,
 	cHPMin,
 	cHPMax,
@@ -17,7 +20,7 @@ enum items{
 
 enum minMax{
 	min,
-	max
+	max,
 }
 
 #define PLUG_VER "1.0"
@@ -37,10 +40,16 @@ public plugin_init(){
 public awDgFwdTouchPre(id, ent){
 	switch(randBonus()){
 		case 0:{ // Деньги
-			
+			static dropMoney; dropMoney = random_num(moneyCount[min], moneyCount[max])
+			cs_set_user_money(id, cs_get_user_money()+dropMoney);
+			static giftMsg[16]; formatex(giftMsg, charsmax(giftMsg), "%d$", dropMoney);
+			awDgSendGiftMsg(id, giftMsg);
 		}
 		case 1:{ // HP
-			
+			static dropHp; dropHp = random_num(hpCount[min], hpCount[max])
+			set_user_health(id, get_user_health()+dropHp);
+			static giftMsg[16]; formatex(giftMsg, charsmax(giftMsg), "%dHP", dropHp);
+			awDgSendGiftMsg(id, giftMsg);
 		}
 	}
 	return AW_DG_STOP;
@@ -80,8 +89,5 @@ cfgExec(){
 			bind_pcvar_num(pCvars[cHPMax], hpCount[max]);
 		}
 	}
-	else{
-		server_print("[%s v%s] [Error] [Config file not found (%s)] [Plugin stopped]", PLUG_NAME, PLUG_VER, cfgFilePath);
-		pause("d");
-	}
+	else set_fail_state("[%s v%s] [Error] [Config file not found (%s)] [Plugin stopped]", PLUG_NAME, PLUG_VER, cfgFilePath);
 }

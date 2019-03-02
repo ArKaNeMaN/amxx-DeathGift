@@ -51,7 +51,6 @@ new giftMoney[minMax];
 #define PLUG_NAME "DeathGift"
 
 public plugin_init(){
-	register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");
 	register_dictionary("awDeathGift.txt");
 	RegisterHam(Ham_Killed, "player", "pDeath", false);
 	register_think("gift", "giftThink");
@@ -63,7 +62,7 @@ public plugin_init(){
 	server_print("[%s v%s] loaded.", PLUG_NAME, PLUG_VER);
 }
 
-public cfgExec(){
+cfgExec(){
 	new pCvars[cvars];
 	pCvars[cDropRarity] = create_cvar("awDgDropRarity", "0.1", FCVAR_NONE, "Редкость выпадения подарка");
 	pCvars[cLifeTime] = create_cvar("awDgLifeTime", "15", FCVAR_NONE, "Время жизни подарка (0 - бесконечно)");
@@ -95,6 +94,7 @@ public plugin_natives(){
 }
 
 public plugin_precache(){
+	register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");
 	cfgExec();
 	if(file_exists(MODEL_PATH)) precache_model(MODEL_PATH);
 	else{
