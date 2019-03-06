@@ -1,35 +1,31 @@
 #include <amxmodx>
+#include <fun>
 #include <cstrike>
 #include <awDeathGift>
 
-enum cvars{
+enum e_giftData{
+	e_giftType:gd_type,
+	gd_name[32],
+	gd_iparam1,
+	gd_iparam2,
+	gd_sparam1[32],
+	gd_sparam2[32],
+}
+
+enum e_giftType{
+	gt_e_undefined,
 	
-	cMoneyRarity,
-	cMoneyMin,
-	cMoneyMax,
-	
-	cHPRarity,
-	cHPMin,
-	cHPMax,
+	gt_money,
+	gt_health,
+	gt_armor,
+	gt_item,
+	gt_func, // Для кастомных бонусов
 }
 
-enum items{
-	itMoney,
-	itHP,
-}
+new Array:gifts;
 
-enum minMax{
-	min,
-	max,
-}
-
-#define PLUG_VER "1.0"
+#define PLUG_VER "in dev"
 #define PLUG_NAME "[DG] MoreBonuses"
-
-new Float:dropsRarity[items];
-
-new moneyCount[minMax];
-new hpCount[minMax];
 
 public plugin_init(){
 	register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");
@@ -37,36 +33,18 @@ public plugin_init(){
 	server_print("[%s v%s] loaded.", PLUG_NAME, PLUG_VER);
 }
 
-public awDgFwdTouchPre(id, ent){
-	switch(randBonus()){
-		case 0:{ // Деньги
-			static dropMoney; dropMoney = random_num(moneyCount[min], moneyCount[max])
-			cs_set_user_money(id, cs_get_user_money()+dropMoney);
-			static giftMsg[16]; formatex(giftMsg, charsmax(giftMsg), "%d$", dropMoney);
-			awDgSendGiftMsg(id, giftMsg);
-		}
-		case 1:{ // HP
-			static dropHp; dropHp = random_num(hpCount[min], hpCount[max])
-			set_user_health(id, get_user_health()+dropHp);
-			static giftMsg[16]; formatex(giftMsg, charsmax(giftMsg), "%dHP", dropHp);
-			awDgSendGiftMsg(id, giftMsg);
-		}
-	}
-	return AW_DG_STOP;
-}
+public plugin_eng() ArrayDestroy(gifts);
 
-randBonus(){
-	
+public plugin_natives(){
+	register_native("dgmb_addGift", "_dgmb_addGift");
 }
 
 cfgExec(){
-	new pCvars[cvars];
-	pCvars[cMoneyRarity] = create_cvar("awDgMbMoneyRarity", "0.1", FCVAR_NONE, "Редкость выпадения денег");
-	pCvars[cMoneyMin] = create_cvar("awDgMbMoneyMin", "100", FCVAR_NONE, "Мин. кол-во денег в подарке");
-	pCvars[cMoneyMax] = create_cvar("awDgMbMoneyMax", "3000", FCVAR_NONE, "Макс. кол-во денег в подарке");
-	pCvars[cHPRarity] = create_cvar("awDgMbHPRarity", "0.1", FCVAR_NONE, "Редкость выпадения HP");
-	pCvars[cHPMin] = create_cvar("awDgMbHPMin", "10", FCVAR_NONE, "Мин. кол-во HP в подарке");
-	pCvars[cHPMax] = create_cvar("awDgMbHPMax", "30", FCVAR_NONE, "Макс. кол-во HP в подарке");
+	
+	register_srvcmd("dgmb_AddGift", "cmdAddGift");
+	// dgmb_AddGift "Название" "тип" "Доп. параметры"...
+	
+	gifts = ArrayCreate(e_giftData);
 	
 	new cfgFilePath[PLATFORM_MAX_PATH];
 	new const fileName[64] = "/awDgMoreBonuses.cfg";
@@ -76,18 +54,100 @@ cfgExec(){
 	if(file_exists(cfgFilePath)){
 		server_cmd("exec %s", cfgFilePath);
 		server_exec();
-		
-		bind_pcvar_float(pCvars[cMoneyRarity], dropsRarity[itMoney]);
-		if(dropsRarity[itMoney] > 0.0){
-			bind_pcvar_num(pCvars[cMoneyMin], moneyCount[min]);
-			bind_pcvar_num(pCvars[cMoneyMax], moneyCount[max]);
-		}
-		
-		bind_pcvar_float(pCvars[cHPRarity], dropsRarity[itHP]);
-		if(dropsRarity[itHP] > 0.0){
-			bind_pcvar_num(pCvars[cHPMin], hpCount[min]);
-			bind_pcvar_num(pCvars[cHPMax], hpCount[max]);
-		}
 	}
 	else set_fail_state("[%s v%s] [Error] [Config file not found (%s)] [Plugin stopped]", PLUG_NAME, PLUG_VER, cfgFilePath);
+}
+
+public cmdAddGift(){
+	static numParams; numParams = read_argc()-1;
+	if(numParams < 2) return;
+	
+	static giftData[e_giftData];
+	
+	static strType[16]; read_argv(1, strType, charsmax(strType));
+	giftData[gd_type] = getGiftType(strType);
+	
+	read_argv(2, giftData[gd_name], charsmax(giftData[gd_name]));
+	
+	switch(giftData[gd_type]){
+		case gt_e_undefined: {
+			log_amx("[Warning] [Gift %d] Undefined gift type", ArraySize(gifts)+1);
+			return;
+		}
+		
+		case gt_money: {
+			if(numParams < 3) return;
+			giftData[gd_iparam1] = read_argv_int(3);
+		}
+		case gt_health: {
+			if(numParams < 4) return;
+			giftData[gd_iparam1] = read_argv_int(3);
+			giftData[gd_iparam2] = read_argv_int(4);
+			
+		}
+		case gt_armor: {
+			if(numParams < 3) return;
+			giftData[gd_iparam1] = read_argv_int(3);
+			giftData[gd_iparam2] = read_argv_int(4);
+			
+		}
+		case gt_item: {
+			if(numParams < 3) return;
+			read_argv(3, giftData[gd_sparam1], charsmax(giftData[gd_sparam1]));
+			
+		}
+		case gt_func: {
+			if(numParams < 4) return;
+			read_argv(3, giftData[gd_sparam1], charsmax(giftData[gd_sparam1]));
+			read_argv(4, giftData[gd_sparam2], charsmax(giftData[gd_sparam2]));
+		}
+	}
+	
+	ArrayPushArray(gifts, giftData);
+	
+}
+
+public awDgFwdTouchPre(id, ent){
+	
+	static giftData[e_giftData]; ArrayGetArray(gifts, random_num(0, ArraySize(gifts)-1), giftData);
+	
+	switch(giftData[gd_type]){
+		case gt_money: {
+			cs_set_user_money(id, cs_get_user_money()+giftData[gd_iparam1]);
+			static giftMsg[64]; formatex(giftMsg, charsmax(giftMsg), "%s в кол-ве %dшт.", giftData[gd_name], giftData[gd_iparam1]);
+			awDgSendGiftMsg(id, giftMsg);
+		}
+		case gt_health: {
+			set_user_health(id, min(get_user_health()+giftData[gd_iparam1], giftData[gd_iparam2]));
+			static giftMsg[64]; formatex(giftMsg, charsmax(giftMsg), "%s в кол-ве %dшт.", giftData[gd_name], giftData[gd_iparam1]);
+			awDgSendGiftMsg(id, giftMsg);
+		}
+		case gt_armor: {
+			set_user_armor(id, min(get_user_armor()+giftData[gd_iparam1], giftData[gd_iparam2]));
+			static giftMsg[64]; formatex(giftMsg, charsmax(giftMsg), "%s в кол-ве %dшт.", giftData[gd_name], giftData[gd_iparam1]);
+			awDgSendGiftMsg(id, giftMsg);
+		}
+		case gt_item: {
+			give_item(id, giftData[dg_sparam1]);
+			awDgSendGiftMsg(id, giftData[gd_name]);
+		}
+		case gt_func: {
+			
+		}
+	}
+	
+	return AW_DG_STOP;
+}
+
+public _dgmb_addGift(){
+	
+}
+
+e_giftType:getGiftType(const type[]){
+	if(!strcmp("money", type)) return gt_money;
+	else if(!strcmp("health", type)) return gt_health;
+	else if(!strcmp("armor", type)) return gt_armor;
+	else if(!strcmp("item", type)) return gt_item;
+	else if(!strcmp("func", type)) return gt_func;
+	return gt_e_undefined;
 }
