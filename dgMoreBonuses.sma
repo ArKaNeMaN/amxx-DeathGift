@@ -175,6 +175,7 @@ public awDgFwdTouchPre(id, ent){
 } */
 
 e_giftType:getGiftType(const type[]){
+	if(equal("empty", type)) return gt_empty;
 	if(equal("money", type)) return gt_money;
 	if(equal("health", type) || equal("hp", type)) return gt_health;
 	if(equal("armor", type) || equal("ap", type)) return gt_armor;
