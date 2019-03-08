@@ -22,6 +22,7 @@ enum e_giftData{
 enum e_giftType{
 	gt_e_undefined,
 	
+	gt_empty,
 	gt_money,
 	gt_health,
 	gt_armor,
@@ -29,7 +30,8 @@ enum e_giftType{
 	gt_func, // Для кастомных бонусов
 }
 
-new Array:gifts, Array:giftFuncs;
+new Array:gifts;
+new Array:giftFuncs;
 
 #define PLUG_VER "1.0"
 #define PLUG_NAME "[DG] MoreBonuses"
@@ -52,12 +54,13 @@ public plugin_eng(){
 	ArrayDestroy(giftFuncs);
 }
 
-public plugin_natives(){
+/* public plugin_natives(){
 	register_native("dgmb_addGift", "_dgmb_addGift");
-}
+} */
 
 public cmdAddGift(){
 	static numParams; numParams = read_argc()-1;
+	//log_amx("[Debug] [cmdAddGift] [Args: %d]", numParams);
 	if(numParams < 1) return;
 	
 	static giftData[e_giftData];
@@ -71,6 +74,7 @@ public cmdAddGift(){
 			return;
 		}
 		
+		case gt_empty: {}
 		case gt_money: {
 			if(numParams < 2) return;
 			giftData[gd_iparam1] = read_argv_int(2);
@@ -85,7 +89,6 @@ public cmdAddGift(){
 			if(numParams < 3) return;
 			giftData[gd_iparam1] = read_argv_int(2);
 			giftData[gd_iparam2] = read_argv_int(3);
-			
 		}
 		case gt_item: {
 			if(numParams < 3) return;
@@ -102,12 +105,12 @@ public cmdAddGift(){
 				funcData[fd_param] = read_argv_int(5);
 				funcData[fd_hasParam] = true;
 			}
-			log_amx("[Debug] [Name: %s] [Plugin: %s] [hasParam: %d] [Param: %d]", funcData[fd_name], funcData[fd_plugin], funcData[fd_hasParam], funcData[fd_param]);
+			//log_amx("[Debug] [Name: %s] [Plugin: %s] [hasParam: %d] [Param: %d]", funcData[fd_name], funcData[fd_plugin], funcData[fd_hasParam], funcData[fd_param]);
 			giftData[gd_iparam1] = ArrayPushArray(giftFuncs, funcData);
 		}
 	}
 	
-	log_amx("[Debug] [Type: %d] [iParam1: %d] [iParam2: %d] [sParam1: %s]", _:giftData[gd_type], giftData[gd_iparam1], giftData[gd_iparam2], giftData[gd_sparam1]);
+	//log_amx("[Debug] [Type: %d] [iParam1: %d] [iParam2: %d] [sParam1: %s]", _:giftData[gd_type], giftData[gd_iparam1], giftData[gd_iparam2], giftData[gd_sparam1]);
 	
 	ArrayPushArray(gifts, giftData);
 	
@@ -119,9 +122,12 @@ public awDgFwdTouchPre(id, ent){
 	
 	static giftData[e_giftData]; ArrayGetArray(gifts, random_num(0, ArraySize(gifts)-1), giftData);
 	
-	log_amx("[Debug] [Type: %d] [iParam1: %d] [iParam2: %d] [sParam1: %s]", _:giftData[gd_type], giftData[gd_iparam1], giftData[gd_iparam2], giftData[gd_sparam1]);
+	//log_amx("[Debug] [Type: %d] [iParam1: %d] [iParam2: %d] [sParam1: %s]", _:giftData[gd_type], giftData[gd_iparam1], giftData[gd_iparam2], giftData[gd_sparam1]);
 	
 	switch(giftData[gd_type]){
+		case gt_empty: {
+			awDgSendGiftMsg(id);
+		}
 		case gt_money: {
 			cs_set_user_money(id, cs_get_user_money(id)+giftData[gd_iparam1]);
 			static giftMsg[64]; formatex(giftMsg, charsmax(giftMsg), "$%d", giftData[gd_iparam1]);
@@ -143,7 +149,7 @@ public awDgFwdTouchPre(id, ent){
 		}
 		case gt_func: {
 			static funcData[e_funcData]; ArrayGetArray(giftFuncs, giftData[gd_iparam1], funcData);
-			log_amx("[Debug] [Name: %s] [Plugin: %s] [hasParam: %d] [Param: %d]", funcData[fd_name], funcData[fd_plugin], funcData[fd_hasParam], funcData[fd_param]);
+			//log_amx("[Debug] [Name: %s] [Plugin: %s] [hasParam: %d] [Param: %d]", funcData[fd_name], funcData[fd_plugin], funcData[fd_hasParam], funcData[fd_param]);
 			switch(callfunc_begin(funcData[fd_name], funcData[fd_plugin])){
 				case -1: {
 					log_amx("[ERROR] Plugin '%s' not found", funcData[fd_plugin]);
@@ -164,17 +170,9 @@ public awDgFwdTouchPre(id, ent){
 	return AW_DG_STOP;
 }
 
-public _dgmb_addGift(){
+/* public _dgmb_addGift(){
 	
-}
-
-public giftTest1(id){
-	client_print(id, print_center, "giftTest1");
-}
-
-public giftTest2(id, param){
-	client_print(id, print_center, "giftTest2: %d", param);
-}
+} */
 
 e_giftType:getGiftType(const type[]){
 	if(equal("money", type)) return gt_money;

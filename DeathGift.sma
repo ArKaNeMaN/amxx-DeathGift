@@ -69,24 +69,12 @@ cfgExec(){
 	pCvars[cMoneyMin] = create_cvar("awDgMoneyMin", "500", FCVAR_NONE, "Минимальная сумма получаемая за подарок");
 	pCvars[cMoneyMax] = create_cvar("awDgMoneyMax", "5000", FCVAR_NONE, "Максимальная сумма получаемая за подарок");
 	
-	//by wopox1337 :))
-	new cfgFilePath[PLATFORM_MAX_PATH];
-	new const fileName[64] = "/awDeathGift.cfg";
-	get_localinfo("amxx_configsdir", cfgFilePath, charsmax(cfgFilePath));
-	add(cfgFilePath, charsmax(cfgFilePath), fileName);
+	AutoExecConfig(true, "Main", "DeathGift");
 	
-	if(file_exists(cfgFilePath)){
-		server_cmd("exec %s", cfgFilePath);
-		server_exec();
-		bind_pcvar_float(pCvars[cDropRarity], dropRarity);
-		bind_pcvar_num(pCvars[cLifeTime], giftLifeTime);
-		bind_pcvar_num(pCvars[cMoneyMin], giftMoney[mMin]);
-		bind_pcvar_num(pCvars[cMoneyMax], giftMoney[mMax]);
-	}
-	else{
-		server_print("[%s v%s] [Error] [Config file not found (%s)] [Plugin stopped]", PLUG_NAME, PLUG_VER, cfgFilePath);
-		set_fail_state("[Config file not found (%s)]", cfgFilePath);
-	}
+	bind_pcvar_float(pCvars[cDropRarity], dropRarity);
+	bind_pcvar_num(pCvars[cLifeTime], giftLifeTime);
+	bind_pcvar_num(pCvars[cMoneyMin], giftMoney[mMin]);
+	bind_pcvar_num(pCvars[cMoneyMax], giftMoney[mMax]);
 }
 
 public plugin_natives(){
@@ -96,6 +84,7 @@ public plugin_natives(){
 public plugin_precache(){
 	register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");
 	cfgExec();
+	
 	if(file_exists(MODEL_PATH)) precache_model(MODEL_PATH);
 	else{
 		server_print("[%s v%s] [Error] [Model file not found (%s)] [Plugin stopped]", PLUG_NAME, PLUG_VER, MODEL_PATH);
