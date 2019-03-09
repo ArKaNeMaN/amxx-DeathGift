@@ -64,11 +64,15 @@ public plugin_init(){
 }
 
 cfgExec(){
-	new pCvars[cvars];
-	pCvars[cDropRarity] = create_cvar("awDgDropRarity", "0.1", FCVAR_NONE, "Редкость выпадения подарка");
-	pCvars[cLifeTime] = create_cvar("awDgLifeTime", "15", FCVAR_NONE, "Время жизни подарка (0 - бесконечно)");
-	pCvars[cMoneyMin] = create_cvar("awDgMoneyMin", "500", FCVAR_NONE, "Минимальная сумма получаемая за подарок");
-	pCvars[cMoneyMax] = create_cvar("awDgMoneyMax", "5000", FCVAR_NONE, "Максимальная сумма получаемая за подарок");
+	new pCvars[cvars], cvarDesc[128];
+	formatex(cvarDesc, charsmax(cvarDesc), "%L", LANG_SERVER, "CVAR_DROP_RARITY");
+	pCvars[cDropRarity] = create_cvar("awDgDropRarity", "0.1", FCVAR_NONE, cvarDesc);
+	formatex(cvarDesc, charsmax(cvarDesc), "%L", LANG_SERVER, "CVAR_LIFE_TIME");
+	pCvars[cLifeTime] = create_cvar("awDgLifeTime", "15", FCVAR_NONE, cvarDesc);
+	formatex(cvarDesc, charsmax(cvarDesc), "%L", LANG_SERVER, "CVAR_MONEY_MIN");
+	pCvars[cMoneyMin] = create_cvar("awDgMoneyMin", "500", FCVAR_NONE, cvarDesc);
+	formatex(cvarDesc, charsmax(cvarDesc), "%L", LANG_SERVER, "CVAR_MONEY_MAX");
+	pCvars[cMoneyMax] = create_cvar("awDgMoneyMax", "5000", FCVAR_NONE, cvarDesc);
 	
 	bind_pcvar_float(pCvars[cDropRarity], dropRarity);
 	bind_pcvar_num(pCvars[cLifeTime], giftLifeTime);
