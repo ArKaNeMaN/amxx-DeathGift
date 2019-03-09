@@ -33,8 +33,8 @@ enum e_giftType{
 new Array:gifts;
 new Array:giftFuncs;
 
-#define PLUG_VER "1.0"
-#define PLUG_NAME "[DG] MoreBonuses"
+new const PLUG_VER[] = "1.0";
+new const PLUG_NAME[] = "[DG] MoreBonuses";
 
 public plugin_init(){
 	register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");

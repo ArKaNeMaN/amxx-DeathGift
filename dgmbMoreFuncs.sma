@@ -26,15 +26,13 @@
 	#include <awCoins>
 #endif
 
-#define DMG_POISON (1<<17)
-
-#define PLUG_NAME "[DG][MB] More Functions"
-#define PLUG_VER "1.0"
+new const PLUG_NAME[] = "[DG][MB] More Functions";
+new const PLUG_VER[] = "1.0";
 
 public plugin_init(){
 	register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");
-	RegisterHam(Ham_Player_Jump, "player", "pJump");
-	RegisterHam(Ham_TakeDamage, "player", "pTakeDamage");
+	RegisterHam(Ham_Player_Jump, "player", "pJump", false);
+	RegisterHam(Ham_TakeDamage, "player", "pTakeDamage", false);
 	server_print("[%s v%s] loaded.", PLUG_NAME, PLUG_VER);
 }
 

@@ -11,10 +11,10 @@
 
 #define PDATA_SAFE 2
 
-#define MODEL_PATH "models/awDeathGift/gift.mdl"
-#define TAKE_SOUND "awDeathGift/take.wav"
+new const MODEL_PATH[] = "models/awDeathGift/gift.mdl";
+new const TAKE_SOUND[] = "awDeathGift/take.wav";
 #define SOUND_VOL 0.8
-#define CHAT_PREFIX "DeathGift"
+new const CHAT_PREFIX[] = "DeathGift";
 #define FLY_SPEED 5.0
 #define ROTATE_SPEED 5.0
 #define THINK_DELAY 1.0
@@ -47,11 +47,12 @@ new Float:dropRarity;
 new giftLifeTime;
 new giftMoney[minMax];
 
-#define PLUG_VER "1.2.1"
-#define PLUG_NAME "DeathGift"
+new const PLUG_VER[] = "1.2.1";
+new const PLUG_NAME[] = "DeathGift";
 
 public plugin_init(){
 	register_dictionary("awDeathGift.txt");
+	cfgExec();
 	RegisterHam(Ham_Killed, "player", "pDeath", false);
 	register_think("gift", "giftThink");
 	register_touch("gift", "player", "giftTouch");
@@ -69,12 +70,12 @@ cfgExec(){
 	pCvars[cMoneyMin] = create_cvar("awDgMoneyMin", "500", FCVAR_NONE, "Минимальная сумма получаемая за подарок");
 	pCvars[cMoneyMax] = create_cvar("awDgMoneyMax", "5000", FCVAR_NONE, "Максимальная сумма получаемая за подарок");
 	
-	AutoExecConfig(true, "Main", "DeathGift");
-	
 	bind_pcvar_float(pCvars[cDropRarity], dropRarity);
 	bind_pcvar_num(pCvars[cLifeTime], giftLifeTime);
 	bind_pcvar_num(pCvars[cMoneyMin], giftMoney[mMin]);
 	bind_pcvar_num(pCvars[cMoneyMax], giftMoney[mMax]);
+	
+	AutoExecConfig(true, "Main", "DeathGift");
 }
 
 public plugin_natives(){
@@ -83,7 +84,6 @@ public plugin_natives(){
 
 public plugin_precache(){
 	register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");
-	cfgExec();
 	
 	if(file_exists(MODEL_PATH)) precache_model(MODEL_PATH);
 	else{
