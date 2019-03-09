@@ -6,8 +6,8 @@
 enum e_funcData{
 	fd_name[32],
 	fd_plugin[32],
-	fd_param,
-	bool:fd_hasParam,
+	fd_params[128],
+	bool:fd_hasParams,
 }
 
 enum e_giftData{
@@ -101,9 +101,13 @@ public cmdAddGift(){
 			static funcData[e_funcData];
 			read_argv(3, funcData[fd_name], charsmax(funcData[fd_name]));
 			read_argv(4, funcData[fd_plugin], charsmax(funcData[fd_plugin]));
-			if(numParams > 4){
+			/* if(numParams > 4){
 				funcData[fd_param] = read_argv_int(5);
 				funcData[fd_hasParam] = true;
+			} */
+			if(numParams > 4){
+				read_argv(5, funcData[fd_params], charsmax(funcData[fd_params]));
+				funcData[fd_hasParams] = true;
 			}
 			//log_amx("[Debug] [Name: %s] [Plugin: %s] [hasParam: %d] [Param: %d]", funcData[fd_name], funcData[fd_plugin], funcData[fd_hasParam], funcData[fd_param]);
 			giftData[gd_iparam1] = ArrayPushArray(giftFuncs, funcData);
@@ -150,6 +154,7 @@ public awDgFwdTouchPre(id, ent){
 		case gt_func: {
 			static funcData[e_funcData]; ArrayGetArray(giftFuncs, giftData[gd_iparam1], funcData);
 			//log_amx("[Debug] [Name: %s] [Plugin: %s] [hasParam: %d] [Param: %d]", funcData[fd_name], funcData[fd_plugin], funcData[fd_hasParam], funcData[fd_param]);
+			
 			switch(callfunc_begin(funcData[fd_name], funcData[fd_plugin])){
 				case -1: {
 					log_amx("[ERROR] Plugin '%s' not found", funcData[fd_plugin]);
@@ -160,9 +165,23 @@ public awDgFwdTouchPre(id, ent){
 					return AW_DG_STOP;
 				}
 			}
+			
 			callfunc_push_int(id);
-			if(funcData[fd_hasParam]) callfunc_push_int(funcData[fd_param]);
+			
+			if(funcData[fd_hasParams]){
+				static params[8][16], countParams;
+				countParams = explode_string(funcData[fd_params], "|", params, 8, 15);
+				if(countParams > 0){
+					for(new i = 0; i < countParams; i++){
+						callfunc_push_str(params[i]);
+					}
+				}
+			}
+			
+			//if(funcData[fd_hasParam]) callfunc_push_int(funcData[fd_param]);
+			
 			callfunc_end();
+			
 			awDgSendGiftMsg(id, giftData[gd_name]);
 		}
 	}
