@@ -5,8 +5,8 @@
 
 // Настройки:
 
-//#define AES_EXP 			// Для опыта Advanced Exp. System [https://dev-cs.ru/threads/1462/]
-//#define AES_BONUS 		// Для бонусов Advanced Exp. System [https://dev-cs.ru/threads/1462/]
+//#define AES_EXP 			// Для опыта Advanced Exp. System [https://dev-cs.ru/threads/1462/ ]
+//#define AES_BONUS 		// Для бонусов Advanced Exp. System [https://dev-cs.ru/threads/1462/ ]
 //#define AES_V4 			// Поддержка старой версии AES
 
 //#define AW_COINS			// Для ArKaNaCoins (Моё)
