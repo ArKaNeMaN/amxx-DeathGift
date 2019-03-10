@@ -1,6 +1,7 @@
 #include <amxmodx>
 #include <hamsandwich>
 #include <fakemeta>
+#tryinclude <reapi>
 
 // Настройки:
 
@@ -37,7 +38,34 @@ public plugin_init(){
 }
 
 
-// 
+// Убийство игрока
+
+public amx_kill(id, const strExplode[]){
+	static bool:explode; explode = bool:str_to_num(strExplode);
+	if(explode){
+		
+	}
+	user_kill(id);
+}
+
+
+#if defined _reapi_included
+// Выпадение оружия
+
+public reapi_dropWeapon(id, const strSlot[]){
+	rg_drop_items_by_slot(id, getSlot(strSlot));
+}
+
+InventorySlotType:getSlot(const slotName[]){
+	if(equal(slotName, "primary") || equal(slotName, "prim")) return PRIMARY_WEAPON_SLOT;
+	else if(equal(slotName, "secondary") || equal(slotName, "sec") || equal(slotName, "pistol")) return PISTOL_SLOT;
+	else if(equal(slotName, "knife")) return KNIFE_SLOT;
+	else if(equal(slotName, "gren") || equal(slotName, "grenade")) return GRENADE_SLOT;
+	else if(equal(slotName, "c4") || equal(slotName, "bomb")) return C4_SLOT;
+	log_amx("[Error] Undefined slot name '%s'", slotName);
+	return NONE_SLOT;
+}
+#endif
 
 
 // Заморозка
@@ -127,26 +155,26 @@ public amx_screenFade(id, const strDur[], const strHold[]){
 // Опыт и бонусы AES
 
 #if defined AES_EXP
-	public aes_addExp(id, const strExp[]){
-		static exp; exp = str_to_num(strExp);
-		aes_add_player_exp(id, exp);
-	}
+public aes_addExp(id, const strExp[]){
+	static exp; exp = str_to_num(strExp);
+	aes_add_player_exp(id, exp);
+}
 #endif
 #if defined AES_BONUS
-	public aes_addBonuses(id, const strBonuses[]){
-		static bonuses; bonuses = str_to_num(strBonuses);
-		aes_add_player_bonus(id, bonuses);
-	}
+public aes_addBonuses(id, const strBonuses[]){
+	static bonuses; bonuses = str_to_num(strBonuses);
+	aes_add_player_bonus(id, bonuses);
+}
 #endif
 
 
 // Коины
 
 #if defined AW_COINS
-	public awCoins_addCoins(id, const strCoins[]){
-		static coins; coins = str_to_num(strCoins);
-		awAddUserCoins(id, coins);
-	}
+public awCoins_addCoins(id, const strCoins[]){
+	static coins; coins = str_to_num(strCoins);
+	awAddUserCoins(id, coins);
+}
 #endif
 
 
