@@ -27,13 +27,100 @@
 #endif
 
 new const PLUG_NAME[] = "[DG][MB] More Functions";
-new const PLUG_VER[] = "1.0";
+new const PLUG_VER[] = "1.1";
 
 public plugin_init(){
 	register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");
 	RegisterHam(Ham_Player_Jump, "player", "pJump", false);
 	RegisterHam(Ham_TakeDamage, "player", "pTakeDamage", false);
 	server_print("[%s v%s] loaded.", PLUG_NAME, PLUG_VER);
+}
+
+
+// 
+
+
+// Заморозка
+
+#define FROZEN_TASK_OFSET 12354
+
+public amx_frozen(id, const strDur[]){
+	static Float:dur; dur = str_to_float(strDur);
+	
+	set_pev(id, pev_flags, pev(id, pev_flags)|FL_FROZEN);
+	//engfunc(EngFunc_DropToFloor, id);
+	set_task(dur, "rmFrozen", id+FROZEN_TASK_OFSET);
+}
+
+public rmFrozen(id){
+	id -= FROZEN_TASK_OFSET;
+	static flags; flags = pev(id, pev_flags);
+	flags &= ~FL_FROZEN;
+	set_pev(id, pev_flags, flags);
+}
+
+
+// Поджог
+
+#define BURN_TASK_OFSET 31154
+#define RM_BURN_TASK_OFSET 31654
+
+new pBurnDmg[MAX_PLAYERS+1];
+
+public amx_burn(id, const strDmg[], const strDur[], const strInterval[]){
+	static dmg; dmg = str_to_num(strDmg);
+	static Float:dur; dur = str_to_float(strDur);
+	static Float:interval; interval = str_to_float(strInterval);
+	
+	pBurnDmg[id] = dmg;
+	set_task(interval, "burnHurt", id+BURN_TASK_OFSET, _, _, "b");
+	set_task(dur, "rmBurn", id+RM_BURN_TASK_OFSET);
+}
+
+public burnHurt(id){
+	id -= BURN_TASK_OFSET;
+	ExecuteHam(Ham_TakeDamage, id, 0, 0, float(pBurnDmg[id]), DMG_BURN);
+}
+
+public rmBurn(id){
+	id -= RM_BURN_TASK_OFSET;
+	remove_task(id+BURN_TASK_OFSET);
+}
+
+
+// Тряска экрана
+
+// <Амплитуда> <Длительность> <Частота>
+public amx_screenShake(id, const strAmp[], const strDur[], const strFreq[]){
+	static amp; amp = str_to_num(strAmp);
+	static dur; dur = str_to_num(strDur);
+	static freq; freq = str_to_num(strFreq);
+	
+	message_begin(MSG_ONE, get_user_msgid("ScreenShake"), {0, 0, 0}, id);
+	write_short(amp*4096);
+	write_short(dur*4096);
+	write_short(freq*4096);
+	message_end();
+}
+
+
+// Ослепление
+
+#define SF_FADE_OUT 0x0000
+
+public amx_screenFade(id, const strDur[], const strHold[]){
+	static dur; dur = str_to_num(strDur);
+	static hold; hold = str_to_num(strHold);
+	
+	message_begin(MSG_ONE, get_user_msgid("ScreenFade"), {0, 0, 0}, id);
+	write_short(dur*4096);
+	write_short(hold*4096);
+	write_short(SF_FADE_OUT);
+	write_byte(255);
+	write_byte(255);
+	write_byte(255);
+	write_byte(255);
+	message_end();
 }
 
 
@@ -104,9 +191,9 @@ public rmDropFlags(id){
 new pPoisonDmg[MAX_PLAYERS+1];
 
 public amx_poison(id, const strDmg[], const strDur[], const strInterval[]){
-	static Float:interval; interval = str_to_float(strInterval);
 	static dmg; dmg = str_to_num(strDmg);
 	static Float:dur; dur = str_to_float(strDur);
+	static Float:interval; interval = str_to_float(strInterval);
 	
 	pPoisonDmg[id] = dmg;
 	set_task(interval, "poisonHurt", id+POISON_TASK_OFSET, _, _, "b");
