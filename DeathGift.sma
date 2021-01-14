@@ -87,32 +87,32 @@ public plugin_init(){
 
 InitCvars(){
 	bind_pcvar_float(create_cvar(
-        "DG_DropRarity", "0.1",
-        FCVAR_NONE, Lang("CVAR_DROP_RARITY"),
-        true, 0.000001,  true, 1.0
-    ), Cvar(DropRarity));
+		"DG_DropRarity", "0.1",
+		FCVAR_NONE, Lang("CVAR_DROP_RARITY"),
+		true, 0.000001,  true, 1.0
+	), Cvar(DropRarity));
 
 	bind_pcvar_num(create_cvar(
-        "DG_LifeTime", "15",
-        FCVAR_NONE, Lang("CVAR_LIFE_TIME"),
-        true, 0.0
-    ), Cvar(LifeTime));
+		"DG_LifeTime", "15",
+		FCVAR_NONE, Lang("CVAR_LIFE_TIME"),
+		true, 0.0
+	), Cvar(LifeTime));
 
 	bind_pcvar_num(create_cvar(
-        "DG_Money_Min", "500",
-        FCVAR_NONE, Lang("CVAR_MONEY_MIN")
-    ), Cvar(Money)[0]);
+		"DG_Money_Min", "500",
+		FCVAR_NONE, Lang("CVAR_MONEY_MIN")
+	), Cvar(Money)[0]);
 
 	bind_pcvar_num(create_cvar(
-        "DG_Money_Max", "5000",
-        FCVAR_NONE, Lang("CVAR_MONEY_MAX")
-    ), Cvar(Money)[1]);
+		"DG_Money_Max", "5000",
+		FCVAR_NONE, Lang("CVAR_MONEY_MAX")
+	), Cvar(Money)[1]);
 
 	bind_pcvar_float(create_cvar(
-        "DG_SoundVolume", "0.8",
-        FCVAR_NONE, Lang("CVAR_SOUND_VOLUME"),
-        true, 0.0,  true, 1.0
-    ), Cvar(SoundVolume));
+		"DG_SoundVolume", "0.8",
+		FCVAR_NONE, Lang("CVAR_SOUND_VOLUME"),
+		true, 0.0,  true, 1.0
+	), Cvar(SoundVolume));
 	
 	AutoExecConfig(true, "Main", "DeathGift");
 }
