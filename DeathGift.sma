@@ -3,202 +3,308 @@
 #include <hamsandwich>
 #include <fakemeta>
 #include <engine>
-#include <awDeathGift>
+#include <DeathGift>
 
-#if !defined client_print_color
-    #include <colorchat>
-#endif
+#pragma semicolon 1
 
+// #define DEBUG
+
+new const PLAYER_CLASSNAME[] = "player";
+new const LANG_STR[] = "%L";
+#define Lang(%1) fmt(LANG_STR,LANG_SERVER,%1)
 #define PDATA_SAFE 2
+#define ENT_VALID(%1) (pev_valid(%1)==PDATA_SAFE)
 
-new const MODEL_PATH[] = "models/awDeathGift/gift.mdl";
-new const TAKE_SOUND[] = "awDeathGift/take.wav";
-#define SOUND_VOL 0.8
+new const Float:GIFT_SIZE[2][3] = {
+	{-10.0, -10.0, -30.0},
+	{10.0, 10.0, 30.0},
+};
+
+new const GIFT_CLASSNAME[] = "DeathGift";
 new const CHAT_PREFIX[] = "DeathGift";
+new const MODEL_PATH[] = "models/DeathGift/gift.mdl";
+new const TAKE_SOUND[] = "DeathGift/take.wav";
 #define FLY_SPEED 5.0
 #define ROTATE_SPEED 5.0
 #define THINK_DELAY 1.0
 
-enum fwds{
-	fTouchPre,
-	fTouchPost,
-	fCreatePre,
-	fCreatePost
+enum E_Cvars{
+	Float:Cvar_DropRarity,
+	Cvar_LifeTime,
+	Cvar_Money[2],
+	Float:Cvar_SoundVolume,
 }
+new Cvars[E_Cvars];
+#define Cvar(%1) Cvars[Cvar_%1]
 
-enum cvars{
-	cDropRarity,
-	cLifeTime,
-	cMoneyMin,
-	cMoneyMax
+enum E_Fwds{
+	Fwd_GiftTouch_Pre,
+	Fwd_GiftTouch_Post,
+
+	Fwd_GiftCreate_Pre,
+	Fwd_GiftCreate_Post,
 }
+new Fwds[E_Fwds];
+#define FwdExecP(%1,%2,[%3]) ExecuteForward(Fwds[Fwd_%1],%2,%3)
+#define FwdRegP(%1,%2,[%3]) Fwds[Fwd_%1]=CreateMultiForward(%2,ET_STOP2,%3)
+// #define FwdExec(%1,%2) ExecuteForward(Fwds[Fwd_%1],%2)
+// #define FwdReg(%1,%2) Fwds[Fwd_%1]=CreateMultiForward(%2,ET_STOP2)
 
-enum minMax{
-	mMin,
-	mMax
-}
-
-new const Float:fMaxs[3] = {10.0, 10.0, 30.0};
-new const Float:fMins[3] = {-1.0, -10.0, -30.0};
-
-new pFwds[fwds];
-
-new Float:dropRarity;
-new giftLifeTime;
-new giftMoney[minMax];
-
-new const PLUG_VER[] = "1.2.1";
-new const PLUG_NAME[] = "DeathGift";
-
-public plugin_init(){
-	register_dictionary("awDeathGift.txt");
-	cfgExec();
-	RegisterHam(Ham_Killed, "player", "pDeath", false);
-	register_think("gift", "giftThink");
-	register_touch("gift", "player", "giftTouch");
-	pFwds[fTouchPre] = CreateMultiForward("awDgFwdTouchPre", ET_CONTINUE, FP_CELL, FP_CELL);
-	pFwds[fTouchPost] = CreateMultiForward("awDgFwdTouchPost", ET_CONTINUE, FP_CELL, FP_CELL);
-	pFwds[fCreatePre] = CreateMultiForward("awDgFwdCreatePre", ET_CONTINUE);
-	pFwds[fCreatePost] = CreateMultiForward("awDgFwdCreatePost", ET_CONTINUE, FP_CELL);
-	server_print("[%s v%s] loaded.", PLUG_NAME, PLUG_VER);
-}
-
-cfgExec(){
-	new pCvars[cvars], cvarDesc[128];
-	formatex(cvarDesc, charsmax(cvarDesc), "%L", LANG_SERVER, "CVAR_DROP_RARITY");
-	pCvars[cDropRarity] = create_cvar("awDgDropRarity", "0.1", FCVAR_NONE, cvarDesc);
-	formatex(cvarDesc, charsmax(cvarDesc), "%L", LANG_SERVER, "CVAR_LIFE_TIME");
-	pCvars[cLifeTime] = create_cvar("awDgLifeTime", "15", FCVAR_NONE, cvarDesc);
-	formatex(cvarDesc, charsmax(cvarDesc), "%L", LANG_SERVER, "CVAR_MONEY_MIN");
-	pCvars[cMoneyMin] = create_cvar("awDgMoneyMin", "500", FCVAR_NONE, cvarDesc);
-	formatex(cvarDesc, charsmax(cvarDesc), "%L", LANG_SERVER, "CVAR_MONEY_MAX");
-	pCvars[cMoneyMax] = create_cvar("awDgMoneyMax", "5000", FCVAR_NONE, cvarDesc);
-	
-	bind_pcvar_float(pCvars[cDropRarity], dropRarity);
-	bind_pcvar_num(pCvars[cLifeTime], giftLifeTime);
-	bind_pcvar_num(pCvars[cMoneyMin], giftMoney[mMin]);
-	bind_pcvar_num(pCvars[cMoneyMax], giftMoney[mMax]);
-	
-	AutoExecConfig(true, "Main", "DeathGift");
-}
+new const PLUG_VER[] = "2.0.0";
+new const PLUG_NAME[] = "Death Gift";
 
 public plugin_natives(){
-	register_native("awDgSendGiftMsg", "_awDgSendGiftMsg");
+	register_library("DeathGift");
+
+	register_native("DG_SendGiftMsg", "@Native_SendGiftMsg");
 }
 
 public plugin_precache(){
 	register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");
 	
-	if(file_exists(MODEL_PATH)) precache_model(MODEL_PATH);
-	else{
-		server_print("[%s v%s] [Error] [Model file not found (%s)] [Plugin stopped]", PLUG_NAME, PLUG_VER, MODEL_PATH);
-		set_fail_state("[Model file not found (%s)]", MODEL_PATH);
-	}
+	if(file_exists(MODEL_PATH))
+		precache_model(MODEL_PATH);
+	else set_fail_state("[Model file not found (%s)]", MODEL_PATH);
 	
-	static sndFullPath[PLATFORM_MAX_PATH]; formatex(sndFullPath, charsmax(sndFullPath), "sound/%s", TAKE_SOUND);
-	if(file_exists(sndFullPath)) precache_sound(TAKE_SOUND);
-	else{
-		server_print("[%s v%s] [Error] [Take sound file not found (%s)] [Plugin stopped]", PLUG_NAME, PLUG_VER, TAKE_SOUND);
-		set_fail_state("[Take sound file not found (%s)]", TAKE_SOUND);
-	}
+	if(file_exists(fmt("sound/%s", TAKE_SOUND)))
+		precache_sound(TAKE_SOUND);
+	else set_fail_state("[Take sound file not found (%s)]", TAKE_SOUND);
 }
 
-public giftTouch(ent, id){
-	emit_sound(ent, CHAN_VOICE, TAKE_SOUND, SOUND_VOL, ATTN_NORM, 0, PITCH_NORM);
-	giftDelete(ent);
-	//server_print("[%s v%s] [Debug] [giftTouch] [%n]", PLUG_NAME, PLUG_VER, id);
-	static ret; ExecuteForward(pFwds[fTouchPre], ret, id, ent);
-	if(ret == AW_DG_CONT){
-		//server_print("[%s v%s] [Debug] [giftTouch] [%n] [Fwd]", PLUG_NAME, PLUG_VER, id);
-		static newMoney; newMoney = random_num(giftMoney[mMin], giftMoney[mMax]);
-		cs_set_user_money(id, cs_get_user_money(id)+newMoney);
-		client_print_color(id, print_team_default, "^4[^3%s^4] ^3%L ^4%d$^3.", CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE", newMoney);
-		ExecuteForward(pFwds[fTouchPost], ret, id, ent);
-	}
+public plugin_init(){
+	register_dictionary("DeathGift.ini");
+
+	InitCvars();
+	InitFwds();
+
+	RegisterHam(Ham_Killed, PLAYER_CLASSNAME, "@Hook_PlayerKilled", false, true);
+
+	register_think(GIFT_CLASSNAME, "@Hook_GiftThink");
+	register_touch(GIFT_CLASSNAME, PLAYER_CLASSNAME, "@Hook_GiftTouch");
+
+	server_print("[%s v%s] loaded.", PLUG_NAME, PLUG_VER);
 }
 
-public pDeath(victim, attacker, corpse){
-	//server_print("[%s v%s] [Debug] [pDeath] [%n]", PLUG_NAME, PLUG_VER, victim);
-	if(dropRandom()){
-		//server_print("[%s v%s] [Debug] [pDeath] [%n] [Drop]", PLUG_NAME, PLUG_VER, victim);
-		giftCreate(victim);
-	}
-}
+InitCvars(){
+	bind_pcvar_float(create_cvar(
+        "DG_DropRarity", "0.1",
+        FCVAR_NONE, Lang("CVAR_DROP_RARITY"),
+        true, 0.000001,  true, 1.0
+    ), Cvar(DropRarity));
 
-public giftDelete(ent){
-	//server_print("[%s v%s] [Debug] [giftDelete]", PLUG_NAME, PLUG_VER);
-	if(giftLifeTime && task_exists(ent)) remove_task(ent);
-	if(ent) remove_entity(ent);
-}
+	bind_pcvar_num(create_cvar(
+        "DG_LifeTime", "15",
+        FCVAR_NONE, Lang("CVAR_LIFE_TIME"),
+        true, 0.0
+    ), Cvar(LifeTime));
 
-public giftCreate(id){
-	//server_print("[%s v%s] [Debug] [giftCreate] [%n]", PLUG_NAME, PLUG_VER, id);
-	static ret; ExecuteForward(pFwds[fCreatePre], ret);
-	if(ret == AW_DG_CONT){
-		//server_print("[%s v%s] [Debug] [giftCreate] [%n] [Fwd]", PLUG_NAME, PLUG_VER, id);
-		static a;
-		if(!a) a = engfunc(EngFunc_AllocString, "info_target");
-		static ent; ent = engfunc(EngFunc_CreateNamedEntity, a);
-		if(pev_valid(ent)){
-			//server_print("[%s v%s] [Debug] [giftCreate] [%n] [Fwd] [Create] [%d]", PLUG_NAME, PLUG_VER, id, ent);
-			set_pev(ent, pev_classname, "gift");
-			
-			static Float:f[3]; pev(id, pev_origin, f); f[2] -= 30.0;
-			set_pev(ent, pev_origin, f);
-			
-			engfunc(EngFunc_SetModel, ent, MODEL_PATH);
-			
-			dllfunc(DLLFunc_Spawn,ent);
-			
-			set_pev(ent, pev_nextthink, get_gametime()+THINK_DELAY);
-			
-			set_pev(ent, pev_movetype, MOVETYPE_NOCLIP);
-			
-			static Float:vecAvelocity[3]; vecAvelocity[1] = ROTATE_SPEED * 10.0;
-			set_pev(ent, pev_avelocity, vecAvelocity);
-			
-			static Float:vecVelocity[3]; vecVelocity[2] = FLY_SPEED;
+	bind_pcvar_num(create_cvar(
+        "DG_Money_Min", "500",
+        FCVAR_NONE, Lang("CVAR_MONEY_MIN")
+    ), Cvar(Money)[0]);
 
-			set_pev(ent, pev_velocity, vecVelocity);
-			set_pev(ent, pev_maxspeed, FLY_SPEED);
-			
-			set_pev(ent, pev_solid, SOLID_TRIGGER);
-			engfunc(EngFunc_SetSize, ent, fMins, fMaxs);
-			
-			if(giftLifeTime) set_task(float(giftLifeTime), "giftDelete", ent);
-			
-			ExecuteForward(pFwds[fCreatePost], ret, ent);
-			//server_print("[%s v%s] [Debug] [giftCreate] [%n] [Fwd] [Created] [%d]", PLUG_NAME, PLUG_VER, id, ent);
-		}
-	}
-}
+	bind_pcvar_num(create_cvar(
+        "DG_Money_Max", "5000",
+        FCVAR_NONE, Lang("CVAR_MONEY_MAX")
+    ), Cvar(Money)[1]);
 
-public giftThink(ent){
-	if(pev_valid(ent) != PDATA_SAFE) return;
+	bind_pcvar_float(create_cvar(
+        "DG_SoundVolume", "0.8",
+        FCVAR_NONE, Lang("CVAR_SOUND_VOLUME"),
+        true, 0.0,  true, 1.0
+    ), Cvar(SoundVolume));
 	
-	set_pev(ent, pev_nextthink, get_gametime()+THINK_DELAY);
+	AutoExecConfig(true, "Main", "DeathGift");
+}
+
+InitFwds(){
+	FwdRegP(GiftTouch_Pre, "DG_OnGiftTouch_Pre", [FP_CELL, FP_CELL]);
+	FwdRegP(GiftTouch_Post, "DG_OnGiftTouch_Post", [FP_CELL, FP_CELL]);
+	FwdRegP(GiftCreate_Pre, "DG_OnGiftCreate_Pre", [FP_CELL]);
+	FwdRegP(GiftCreate_Post, "DG_OnGiftCreate_Post", [FP_CELL]);
+}
+
+@Hook_GiftTouch(const GiftId, const UserId){
+	if(!is_user_alive(UserId))
+		return;
+
+	emit_sound(GiftId, CHAN_VOICE, TAKE_SOUND, Cvar(SoundVolume), ATTN_NORM, 0, PITCH_NORM);
+
+	#if defined DEBUG
+	log_amx("[DEBUG] [giftTouch] [%d]", PLUG_NAME, PLUG_VER, UserId);
+	#endif
+
+	new ret = DG_CONTINUE;
+	FwdExecP(GiftTouch_Pre, ret, [UserId, GiftId]);
+
+	if(ret == DG_STOP){
+		GiftDelete(GiftId);
+		return;
+	}
+
+	#if defined DEBUG
+	log_amx("[DEBUG] [giftTouch] [%d] [Fwd]", PLUG_NAME, PLUG_VER, UserId);
+	#endif
+
+	new newMoney = RndRange(Cvar(Money));
+
+	cs_set_user_money(UserId, cs_get_user_money(UserId)+newMoney);
+	DG_SendGiftMsg(UserId, fmt("%d$", newMoney));
+
+	FwdExecP(GiftTouch_Post, ret, [UserId, GiftId]);
+
+	GiftDelete(GiftId);
+}
+
+@Hook_PlayerKilled(victim, attacker, corpse){
+	#if defined DEBUG
+	log_amx("[DEBUG] [pDeath] [%d]", PLUG_NAME, PLUG_VER, victim);
+	#endif
+
+	if(RndDrop()){
+		#if defined DEBUG
+		log_amx("[DEBUG] [pDeath] [%d] [Drop]", PLUG_NAME, PLUG_VER, victim);
+		#endif
+
+		new ret = DG_CONTINUE;
+		FwdExecP(GiftCreate_Pre, ret, [victim]);
+
+		if(ret == DG_STOP)
+			return;
+
+		static Float:origin[3];
+		pev(victim, pev_origin, origin);
+		origin[2] -= 25.0;
+
+		GiftCreate(origin);
+	}
+	#if defined DEBUG
+	else log_amx("[DEBUG] [pDeath] [%d] [Not Drop]", PLUG_NAME, PLUG_VER, victim);
+	#endif
+}
+
+@Task_GiftDelete(const TaskId){GiftDelete(TaskId);}
+
+GiftDelete(GiftId){
+	if(!ENT_VALID(GiftId))
+		return;
+
+	#if defined DEBUG
+	log_amx("[DEBUG] [giftDelete]", PLUG_NAME, PLUG_VER);
+	#endif
+
+	if(task_exists(GiftId))
+		remove_task(GiftId);
+
+	remove_entity(GiftId);
+}
+
+GiftCreate(Float:origin[3]){
+	#if defined DEBUG
+	log_amx("[DEBUG] [giftCreate]", PLUG_NAME, PLUG_VER);
+	#endif
+
+	#if defined DEBUG
+	log_amx("[DEBUG] [giftCreate] [Fwd]", PLUG_NAME, PLUG_VER);
+	#endif
+
+	static a;
+	if(!a)
+		a = engfunc(EngFunc_AllocString, "info_target");
+	static GiftId; GiftId = engfunc(EngFunc_CreateNamedEntity, a);
+
+	if(!pev_valid(GiftId))
+		return;
+		
+	#if defined DEBUG
+	log_amx("[DEBUG] [giftCreate] [Fwd] [Create] [%d]", PLUG_NAME, PLUG_VER, GiftId);
+	#endif
+
+	set_pev(GiftId, pev_classname, GIFT_CLASSNAME);
+	engfunc(EngFunc_SetModel, GiftId, MODEL_PATH);
+	set_pev(GiftId, pev_origin, origin);
+
+	ExecuteHam(Ham_Spawn, GiftId);
+
+	set_pev(GiftId, pev_nextthink, get_gametime()+THINK_DELAY);
+
+	set_pev(GiftId, pev_movetype, MOVETYPE_NOCLIP);
+	set_pev(GiftId, pev_solid, SOLID_TRIGGER);
+	SetEntSize(GiftId, GIFT_SIZE[0], GIFT_SIZE[1]);
+	
+	static Float:vecAvelocity[3];				//
+	vecAvelocity[1] = ROTATE_SPEED * 10.0;		// Установка скорости вращения
+	set_pev(GiftId, pev_avelocity, vecAvelocity);	//
+
+	//static Float:vecVelocity[3];
+	//vecVelocity[2] = FLY_SPEED;
+	set_pev(GiftId, pev_velocity, {0.0, 0.0, FLY_SPEED});
+
+	set_pev(GiftId, pev_maxspeed, FLY_SPEED);
+
+
+	if(Cvar(LifeTime))
+		set_task(float(Cvar(LifeTime)), "@Task_GiftDelete", GiftId);
+	
+	new ret;
+	FwdExecP(GiftCreate_Post, ret, [GiftId]);
+	
+	#if defined DEBUG
+	log_amx("[DEBUG] [giftCreate] [Fwd] [Created] [%d]", PLUG_NAME, PLUG_VER, GiftId);
+	#endif
+}
+
+@Hook_GiftThink(const GiftId){
+	if(!ENT_VALID(GiftId))
+		return;
+	
+	set_pev(GiftId, pev_nextthink, get_gametime()+THINK_DELAY);
 	
 	static Float:vecVelocity[3], Float:fFlyUp;
-	pev(ent, pev_maxspeed, fFlyUp);
+	pev(GiftId, pev_maxspeed, fFlyUp);
 	vecVelocity[2] = fFlyUp;
 
-	set_pev(ent, pev_velocity, vecVelocity);
-	set_pev(ent, pev_maxspeed, -fFlyUp);
+	set_pev(GiftId, pev_velocity, vecVelocity);
+	set_pev(GiftId, pev_maxspeed, -fFlyUp);
 	
-	//server_print("[%s v%s] [Debug] [giftThink] [%d]", PLUG_NAME, PLUG_VER, ent);
+	#if defined DEBUG
+	log_amx("[DEBUG] [giftThink] [%d]", PLUG_NAME, PLUG_VER, GiftId);
+	#endif
 	
 	return;
 }
 
-bool:dropRandom(){
-	//server_print("[%s v%s] [Debug] [dropRandom]", PLUG_NAME, PLUG_VER);
-	if(random_num(1, floatround(1.0/dropRarity)) == 1) return true;
-	return false;
+@Native_SendGiftMsg(pluginId, params){
+	enum {Arg_UserId = 1, Arg_GiftName}
+
+	new UserId; UserId = get_param(Arg_UserId);
+	new GiftName[64]; get_string(Arg_GiftName, GiftName, charsmax(GiftName));
+
+	if(equal(GiftName, ""))
+		client_print_color(UserId, print_team_default, "^4[^3%s^4] ^1%L", CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE_EMPTY");
+	else client_print_color(UserId, print_team_default, "^4[^3%s^4] ^1%L", CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE", GiftName);
 }
 
-public _awDgSendGiftMsg(pluginId, params){
-	static id; id = get_param(1);
-	static str[64]; get_string(2, str, charsmax(str));
-	if(equal(str, "")) client_print_color(id, print_team_default, "^4[^3%s^4] ^3%L.", CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE_EMPTY");
-	else client_print_color(id, print_team_default, "^4[^3%s^4] ^3%L ^4%s^3.", CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE", str);
+SetEntSize(const Ent, const Float:Mins[3], const Float:Maxs[3]){
+	set_pev(Ent, pev_mins, Mins);
+	set_pev(Ent, pev_maxs, Maxs);
+	new Float:Size[3];
+	Size[0] = Mins[0] + Maxs[0];
+	Size[1] = Mins[1] + Maxs[1];
+	Size[2] = Mins[2] + Maxs[2];
+	set_pev(Ent, pev_size, Size);
+}
+
+RndRange(const Range[]){
+	return random_num(Range[0], Range[1]);
+}
+
+bool:RndDrop(){
+	new rnd = random_num(1, floatround(1.0/Cvar(DropRarity)));
+
+	#if defined DEBUG
+	log_amx("[DEBUG] [RndDrop] [1, %d] [%d]", PLUG_NAME, PLUG_VER, floatround(1.0/Cvar(DropRarity)), rnd);
+	#endif
+
+	return (rnd == 1);
 }

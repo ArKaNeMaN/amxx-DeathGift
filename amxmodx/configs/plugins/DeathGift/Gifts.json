@@ -1,0 +1,62 @@
+[
+    {
+        "Name": "Смерть",
+        "Chance": 1,
+        "Bonus": "Kill"
+    },
+    {
+        "Name": "Заморозку",
+        "Chance": 5,
+        "Bonus": "Freeze",
+        "Params": {
+            "Duration": 5.0
+        }
+    },
+    {
+        "Name": "Выбрасывание оружия",
+        "Chance": 3,
+        "Bonus": "DropWeapon",
+        "Params": {
+            "Slot": "Secondary"
+        }
+    },
+    {
+        "Name": "Двойной прыжок",
+        "Chance": 10,
+        "Bonus": "DoubleJump",
+        "Params": {
+            "Duration": 10.0
+        }
+    },
+    {
+        "Name": "Умножение урона",
+        "Chance": 8,
+        "Bonus": "DamageMult",
+        "Params": {
+            "Duration": 5.0,
+            "Multiplier": 1.5
+        }
+    },
+    {
+        "Name": "Тряску экрана",
+        "Chance": 15,
+        "Bonus": "ScreenShake",
+        "Params": {
+            "Amplitude": 10,
+            "Duration": 3,
+            "Frequency": 3
+        }
+    },
+    {
+        "Name": "Красный экран",
+        "Chance": 20,
+        "Bonus": "ScreenFade",
+        "Params": {
+            "Duration": 5,
+            "HoldTime": 3,
+            "Green": 0,
+            "Blue": 0,
+            "Alpha": 127
+        }
+    }
+]
