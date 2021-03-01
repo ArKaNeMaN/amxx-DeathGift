@@ -1,4 +1,4 @@
-# Death Gift
+<img height=64 src="https://github.com/ArKaNeMaN/amxx-DeathGift/blob/master/IconBar-96.png?raw=true" alt="DeathGift-IconBar"/>
 
 ## Описание
 
