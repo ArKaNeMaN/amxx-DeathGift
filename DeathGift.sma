@@ -10,6 +10,7 @@
 // #define DEBUG
 
 new const PLAYER_CLASSNAME[] = "player";
+new const CHAT_MSG_TPL[] = "^4[^3%s^4] ^1%L";
 new const LANG_STR[] = "%L";
 #define Lang(%1) fmt(LANG_STR,LANG_SERVER,%1)
 #define PDATA_SAFE 2
@@ -33,6 +34,7 @@ enum E_Cvars{
     Cvar_LifeTime,
     Cvar_Money[2],
     Float:Cvar_SoundVolume,
+    bool:Cvar_MsgsForAll,
 }
 new Cvars[E_Cvars];
 #define Cvar(%1) Cvars[Cvar_%1]
@@ -50,7 +52,7 @@ new Fwds[E_Fwds];
 // #define FwdExec(%1,%2) ExecuteForward(Fwds[Fwd_%1],%2)
 // #define FwdReg(%1,%2) Fwds[Fwd_%1]=CreateMultiForward(%2,ET_STOP2)
 
-new const PLUG_VER[] = "2.0.0";
+new const PLUG_VER[] = "2.1.0";
 new const PLUG_NAME[] = "Death Gift";
 
 public plugin_natives(){
@@ -113,6 +115,13 @@ InitCvars(){
         FCVAR_NONE, Lang("CVAR_SOUND_VOLUME"),
         true, 0.0,  true, 1.0
     ), Cvar(SoundVolume));
+    
+
+    bind_pcvar_num(create_cvar(
+        "DG_MsgsForAll", "0",
+        FCVAR_NONE, Lang("CVAR_MSGS_FOR_ALL"),
+        true, 0.0,  true, 1.0
+    ), Cvar(MsgsForAll));
     
     AutoExecConfig(true, "Main", "DeathGift");
 }
@@ -280,9 +289,28 @@ GiftCreate(Float:origin[3]){
     new UserId; UserId = get_param(Arg_UserId);
     new GiftName[64]; get_string(Arg_GiftName, GiftName, charsmax(GiftName));
 
-    if(equal(GiftName, ""))
-        client_print_color(UserId, print_team_default, "^4[^3%s^4] ^1%L", CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE_EMPTY");
-    else client_print_color(UserId, print_team_default, "^4[^3%s^4] ^1%L", CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE", GiftName);
+    if(!Cvar(MsgsForAll)){
+        if(equal(GiftName, ""))
+            client_print_color(UserId,
+                print_team_default, CHAT_MSG_TPL,
+                CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE_EMPTY"
+            );
+        else client_print_color(UserId,
+                print_team_default, CHAT_MSG_TPL,
+                CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE", GiftName
+            );
+    }
+    else{
+        if(equal(GiftName, ""))
+            client_print_color(0,
+                print_team_default, CHAT_MSG_TPL,
+                CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE_EMPTY_FORALL", UserId
+            );
+        else client_print_color(0,
+                print_team_default, CHAT_MSG_TPL,
+                CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE_FORALL", UserId, GiftName
+            );
+    }
 }
 
 SetEntSize(const Ent, const Float:Mins[3], const Float:Maxs[3]){
