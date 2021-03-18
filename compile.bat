@@ -1,18 +1,24 @@
 @echo off
 
-copy .\include\DeathGift.inc C:\AmxModX\1.9.0\include\
+echo /============ PREPARE =============
+echo /
 
-del .\plugins /q
+xcopy .\include C:\AmxModX\1.9.0\include /s /e /y
+
+rd /S /q .\plugins
 mkdir .\plugins
+cd .\plugins
 
-amxx190 .\DeathGift.sma
-move .\DeathGift.amxx .\plugins\
-amxx190 .\DG_MoreBonuses.sma
-move .\DG_MoreBonuses.amxx .\plugins\
-amxx190 .\DG_MoreFuncs.sma
-move .\DG_MoreFuncs.amxx .\plugins\
+echo /
+echo /
+echo /============ COMPILE =============
+echo /
 
-echo .
-echo .
-echo .
-set /p q=Done...
+for /R ..\ %%F in (*.sma) do amxx190 %%F
+
+echo /
+echo /
+echo /============ END =============
+echo /
+
+set /p q=Done.
