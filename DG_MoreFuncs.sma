@@ -273,6 +273,8 @@ new Float:pMultDmg[MAX_PLAYERS+1];
     pMultDmg[id] = 0.0;
 }
 @Hook_PlayerTakeDamage(victim, inflictor, attacker, damage, damagebits){
+    if(attacker < 1 || attacker > 32)
+        return HAM_IGNORED;
     if(pMultDmg[attacker] > 0.0)
         SetHamParamFloat(4, damage*pMultDmg[attacker]);
     return HAM_IGNORED;
