@@ -6,6 +6,8 @@
 
 Содержимое подарков можно настроить как вам угодно.
 
+#### [Расширения](https://github.com/ArKaNeMaN/amxx-DeathGift-Extentions)
+
 ## Требования
 
 - [AmxModX-1.8.3](https://www.amxmodx.org/downloads-new.php) или новее
