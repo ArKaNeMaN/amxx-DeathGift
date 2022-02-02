@@ -80,6 +80,7 @@ public plugin_init(){
     InitFwds();
 
     RegisterHam(Ham_Killed, PLAYER_CLASSNAME, "@Hook_PlayerKilled", false, true);
+    register_event("HLTV", "@Hook_RoundStart", "a", "1=0", "2=0");
 
     register_think(GIFT_CLASSNAME, "@Hook_GiftThink");
     register_touch(GIFT_CLASSNAME, PLAYER_CLASSNAME, "@Hook_GiftTouch");
@@ -131,6 +132,13 @@ InitFwds(){
     FwdRegP(GiftTouch_Post, "DG_OnGiftTouch_Post", [FP_CELL, FP_CELL]);
     FwdRegP(GiftCreate_Pre, "DG_OnGiftCreate_Pre", [FP_CELL]);
     FwdRegP(GiftCreate_Post, "DG_OnGiftCreate_Post", [FP_CELL]);
+}
+
+@Hook_RoundStart() {
+    new iEnt = 0;
+    while(iEnt = find_ent_by_class(iEnt, GIFT_CLASSNAME)) {
+        GiftDelete(iEnt);
+    }
 }
 
 @Hook_GiftTouch(const GiftId, const UserId){
