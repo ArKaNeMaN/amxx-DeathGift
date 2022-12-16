@@ -25,18 +25,17 @@
         #include <aes_main>
     #else
         #include <aes_v>
-        #define aes_add_player_exp(%0,%1) aes_add_player_exp_f(%0,float(%1))
-        #define aes_add_player_bonus(%0,%1) aes_add_player_bonus_f(%0,%1)
+        #define aes_add_player_exp(%0,%1) aes_add_player_exp_f(%0, float(%1))
+        #define aes_add_player_bonus(%0,%1) aes_add_player_bonus_f(%0, %1)
     #endif
 #endif
 
 new const PLUG_NAME[] = "[DG] More Funcs";
 new const PLUG_VER[] = "2.0.0";
 
-public DG_OnBonusesInit(){
+public DG_OnBonusesInit() {
     register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");
 
-    
     #if defined _reapi_included
     DG_RegisterBonus("DropWeapon", "@Bonus_DropWeapon", "Slot", ptString);
     #endif
@@ -96,33 +95,37 @@ public DG_OnBonusesInit(){
 }
 
 // Тестовый бонус
-@Bonus_Test(const UserId, const Trie:p){
+@Bonus_Test(const UserId, const Trie:p) {
     log_amx("[TEST] UserId = %d", UserId);
     log_amx("[TEST] Param123 = %d", DG_ReadParamInt(p, "Param123"));
 }
 
 // Смерть :)
-@Bonus_Kill(const UserId, const Trie:p){
+@Bonus_Kill(const UserId, const Trie:p) {
     user_kill(UserId);
 }
 
 #if defined _reapi_included
 // Выпадение оружия
-@Bonus_DropWeapon(const UserId, const Trie:p){
-    new strSlot[16]; DG_ReadParamString(p, "Slot", strSlot, charsmax(strSlot), "primary");
+@Bonus_DropWeapon(const UserId, const Trie:p) {
+    new strSlot[16];
+    DG_ReadParamString(p, "Slot", strSlot, charsmax(strSlot), "primary");
+
     rg_drop_items_by_slot(UserId, GetSlot(strSlot));
 }
-InventorySlotType:GetSlot(const slotName[]){
-    if(equali(slotName, "primary") || equali(slotName, "prim"))
-        return PRIMARY_WEAPON_SLOT;
-    else if(equali(slotName, "secondary") || equali(slotName, "sec") || equali(slotName, "pistol"))
+
+InventorySlotType:GetSlot(const slotName[]) {
+    if (equali(slotName, "primary") || equali(slotName, "prim")) {
+        return PRIMARY_WEAPON_SLOT; 
+    } else if(equali(slotName, "secondary") || equali(slotName, "sec") || equali(slotName, "pistol")) {
         return PISTOL_SLOT;
-    else if(equali(slotName, "knife"))
+    } else if(equali(slotName, "knife")) {
         return KNIFE_SLOT;
-    else if(equali(slotName, "gren") || equali(slotName, "grenade"))
+    } else if(equali(slotName, "gren") || equali(slotName, "grenade")) {
         return GRENADE_SLOT;
-    else if(equali(slotName, "c4") || equali(slotName, "bomb"))
+    } else if(equali(slotName, "c4") || equali(slotName, "bomb")) {
         return C4_SLOT;
+    }
 
     log_amx("[Error] Undefined slot name '%s'", slotName);
     return NONE_SLOT;
@@ -131,11 +134,12 @@ InventorySlotType:GetSlot(const slotName[]){
 
 // Заморозка
 #define FROZEN_TASK_OFSET 12354
-@Bonus_Freeze(const UserId, const Trie:p){
-    set_pev(UserId, pev_flags, pev(UserId, pev_flags)|FL_FROZEN);
-    set_task(DG_ReadParamFloat(p, "Duration"), "@Task_FrozenRemove", UserId+FROZEN_TASK_OFSET);
+@Bonus_Freeze(const UserId, const Trie:p) {
+    set_pev(UserId, pev_flags, pev(UserId, pev_flags) | FL_FROZEN);
+    set_task(DG_ReadParamFloat(p, "Duration"), "@Task_FrozenRemove", UserId + FROZEN_TASK_OFSET);
 }
-@Task_FrozenRemove(const TaskId){
+
+@Task_FrozenRemove(const TaskId) {
     new UserId = TaskId - FROZEN_TASK_OFSET;
     new Flags; Flags = pev(UserId, pev_flags);
     Flags &= ~FL_FROZEN;
@@ -146,22 +150,24 @@ InventorySlotType:GetSlot(const slotName[]){
 #define BURN_TASK_OFSET 31154
 #define RM_BURN_TASK_OFSET 31654
 new pBurnDmg[MAX_PLAYERS+1];
-@Bonus_Burn(const UserId, const Trie:p){
+@Bonus_Burn(const UserId, const Trie:p) {
     pBurnDmg[UserId] = DG_ReadParamInt(p, "Damage");
-    set_task(DG_ReadParamFloat(p, "Interval"), "@Task_BurnHurt", UserId+BURN_TASK_OFSET, _, _, "b");
-    set_task(DG_ReadParamFloat(p, "Duration"), "@Task_BurnRemove", UserId+RM_BURN_TASK_OFSET);
+    set_task(DG_ReadParamFloat(p, "Interval"), "@Task_BurnHurt", UserId + BURN_TASK_OFSET, _, _, "b");
+    set_task(DG_ReadParamFloat(p, "Duration"), "@Task_BurnRemove", UserId + RM_BURN_TASK_OFSET);
 }
-@Task_BurnHurt(id){
+
+@Task_BurnHurt(id) {
     id -= BURN_TASK_OFSET;
     ExecuteHam(Ham_TakeDamage, id, 0, 0, float(pBurnDmg[id]), DMG_BURN);
 }
-@Task_BurnRemove(id){
+
+@Task_BurnRemove(id) {
     id -= RM_BURN_TASK_OFSET;
-    remove_task(id+BURN_TASK_OFSET);
+    remove_task(id + BURN_TASK_OFSET);
 }
 
 // Тряска экрана
-@Bonus_ScreenShake(const UserId, const Trie:p){
+@Bonus_ScreenShake(const UserId, const Trie:p) {
     message_begin(MSG_ONE, get_user_msgid("ScreenShake"), {0, 0, 0}, UserId);
     write_short(DG_ReadParamInt(p, "Amplitude")*4096);
     write_short(DG_ReadParamInt(p, "Duration")*4096);
@@ -171,10 +177,10 @@ new pBurnDmg[MAX_PLAYERS+1];
 
 // Ослепление
 #define SF_FADE_OUT 0x0000
-@Bonus_ScreenFade(const UserId, const Trie:p){
+@Bonus_ScreenFade(const UserId, const Trie:p) {
     message_begin(MSG_ONE, get_user_msgid("ScreenFade"), {0, 0, 0}, UserId);
-    write_short(DG_ReadParamInt(p, "Duration")*4096);
-    write_short(DG_ReadParamInt(p, "HoldTime")*4096);
+    write_short(DG_ReadParamInt(p, "Duration") * 4096);
+    write_short(DG_ReadParamInt(p, "HoldTime") * 4096);
     write_short(SF_FADE_OUT);
     write_byte(DG_ReadParamInt(p, "Red", 255));
     write_byte(DG_ReadParamInt(p, "Green", 255));
@@ -185,12 +191,12 @@ new pBurnDmg[MAX_PLAYERS+1];
 
 // Опыт и бонусы AES
 #if defined AES_EXP
-@Bonus_AesExp(const UserId, const Trie:p){
+@Bonus_AesExp(const UserId, const Trie:p) {
     aes_add_player_exp(id, DG_ReadParamInt(p, "Exp", 1));
 }
 #endif
 #if defined AES_BONUS
-@Bonus_AesBonuses(const UserId, const Trie:p){
+@Bonus_AesBonuses(const UserId, const Trie:p) {
     aes_add_player_bonus(id, DG_ReadParamInt(p, "Bonuses", 1));
 }
 #endif
@@ -199,18 +205,21 @@ new pBurnDmg[MAX_PLAYERS+1];
 #define POISON_TASK_OFSET 86723
 #define RM_POISON_TASK_OFSET 86323
 new pPoisonDmg[MAX_PLAYERS+1];
-@Bonus_Poison(const UserId, const Trie:p){
+
+@Bonus_Poison(const UserId, const Trie:p) {
     pPoisonDmg[UserId] = DG_ReadParamInt(p, "Damage");
-    set_task(DG_ReadParamFloat(p, "Interval"), "@Task_PoisonHurt", UserId+POISON_TASK_OFSET, _, _, "b");
-    set_task(DG_ReadParamFloat(p, "Duration"), "@Task_PoisonRemove", UserId+RM_POISON_TASK_OFSET);
+    set_task(DG_ReadParamFloat(p, "Interval"), "@Task_PoisonHurt", UserId + POISON_TASK_OFSET, _, _, "b");
+    set_task(DG_ReadParamFloat(p, "Duration"), "@Task_PoisonRemove", UserId + RM_POISON_TASK_OFSET);
 }
-@Task_PoisonHurt(id){
+
+@Task_PoisonHurt(id) {
     id -= POISON_TASK_OFSET;
     ExecuteHam(Ham_TakeDamage, id, 0, 0, float(pPoisonDmg[id]), DMG_POISON);
 }
-@Task_PoisonRemove(id){
+
+@Task_PoisonRemove(id) {
     id -= RM_POISON_TASK_OFSET;
-    remove_task(id+POISON_TASK_OFSET);
+    remove_task(id + POISON_TASK_OFSET);
 }
 
 // Двойной прыжок
@@ -219,43 +228,63 @@ new pPoisonDmg[MAX_PLAYERS+1];
 new bool:szTwoJump[MAX_PLAYERS+1];
 new szTwoJumpNum[MAX_PLAYERS+1];
 new bool:szDoTwoJump[MAX_PLAYERS+1];
-@Bonus_DoubleJump(const UserId, const Trie:p){
+
+@Bonus_DoubleJump(const UserId, const Trie:p) {
     szTwoJump[UserId] = true;
-    set_task(DG_ReadParamFloat(p, "Duration"), "@Task_DoubleJumpRemove", UserId+DOUBLE_JUMP_TASK_OFSET);
+    set_task(DG_ReadParamFloat(p, "Duration"), "@Task_DoubleJumpRemove", UserId + DOUBLE_JUMP_TASK_OFSET);
 }
-@Task_DoubleJumpRemove(id){
+
+@Task_DoubleJumpRemove(id) {
     id -= DOUBLE_JUMP_TASK_OFSET;
     szTwoJump[id] = false;
 }
-@Hook_PlayerJump(id){
-    if(szTwoJump[id]){
-        new szButton = pev(id, pev_button);
-        new szOldButton = pev(id, pev_oldbuttons);
-        if((szButton & IN_JUMP) && !(pev(id, pev_flags) & FL_ONGROUND) && !(szOldButton & IN_JUMP)){
-            if(szTwoJumpNum[id] < 1){
-                szDoTwoJump[id] = true;
-                szTwoJumpNum[id]++;
-                PostTwoJump(id);
-                return HAM_IGNORED;
-            }
-        }
-        if((szButton & IN_JUMP) && (pev(id, pev_flags) & FL_ONGROUND)) szTwoJumpNum[id] = 0;
+
+@Hook_PlayerJump(id) {
+    if (!szTwoJump[id]) {
+        return HAM_IGNORED;
     }
+
+    new szButton = pev(id, pev_button);
+    new szOldButton = pev(id, pev_oldbuttons);
+    if (
+        (szButton & IN_JUMP)
+        && !(pev(id, pev_flags) & FL_ONGROUND)
+        && !(szOldButton & IN_JUMP)
+    ) {
+        if (szTwoJumpNum[id] < 1) {
+            szDoTwoJump[id] = true;
+            szTwoJumpNum[id]++;
+            PostTwoJump(id);
+            return HAM_IGNORED;
+        }
+    }
+
+    if (
+        (szButton & IN_JUMP)
+        && (pev(id, pev_flags) & FL_ONGROUND)
+    ) {
+        szTwoJumpNum[id] = 0;
+    }
+
     return HAM_IGNORED;
 }
+
 PostTwoJump(id){
-    if(szTwoJump[id]){
-        if(!is_user_alive(id)) return;
-        if(szDoTwoJump[id]){
-            new Float:szVelocity[3];
-            pev(id, pev_velocity, szVelocity);
-            szVelocity[2] = random_float(295.0,305.0);
-            set_pev(id, pev_velocity, szVelocity);
-            szDoTwoJump[id] = false;
-            return;
-        }
+    if (
+        !szTwoJump[id]
+        || !is_user_alive(id)
+        || !szDoTwoJump[id]
+    ) {
+        return;
     }
-    return;
+    
+    new Float:szVelocity[3];
+    pev(id, pev_velocity, szVelocity);
+
+    szVelocity[2] = random_float(295.0,305.0);
+    set_pev(id, pev_velocity, szVelocity);
+
+    szDoTwoJump[id] = false;
 }
 #endif
 
@@ -264,19 +293,26 @@ PostTwoJump(id){
 #if defined USE_DAMAGE_MULT
 #define MULT_DAMAGE_TASK_OFSET 41546
 new Float:pMultDmg[MAX_PLAYERS+1];
-@Bonus_DamageMult(const UserId, const Trie:p){
+
+@Bonus_DamageMult(const UserId, const Trie:p) {
     pMultDmg[UserId] = DG_ReadParamFloat(p, "Multiplier", 1.25);
-    set_task(DG_ReadParamFloat(p, "Duration"), "@Task_MultDamageRemove", UserId+MULT_DAMAGE_TASK_OFSET);
+    set_task(DG_ReadParamFloat(p, "Duration"), "@Task_MultDamageRemove", UserId + MULT_DAMAGE_TASK_OFSET);
 }
-@Task_MultDamageRemove(id){
+
+@Task_MultDamageRemove(id) {
     id -= MULT_DAMAGE_TASK_OFSET;
     pMultDmg[id] = 0.0;
 }
-@Hook_PlayerTakeDamage(victim, inflictor, attacker, damage, damagebits){
-    if(attacker < 1 || attacker > 32)
+
+@Hook_PlayerTakeDamage(victim, inflictor, attacker, damage, damagebits) {
+    if (attacker < 1 || attacker > 32) {
         return HAM_IGNORED;
-    if(pMultDmg[attacker] > 0.0)
-        SetHamParamFloat(4, damage*pMultDmg[attacker]);
+    }
+
+    if (pMultDmg[attacker] > 0.0) {
+        SetHamParamFloat(4, damage * pMultDmg[attacker]);
+    }
+
     return HAM_IGNORED;
 }
 #endif

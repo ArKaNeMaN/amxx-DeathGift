@@ -9,8 +9,6 @@
 
 #pragma semicolon 1
 
-// #define DEBUG
-
 #define ParamType DG_ParamType
 
 /*
@@ -52,11 +50,11 @@ new gChances = 0;
 new const PLUG_NAME[] = "[DG] More Bonuses";
 new const PLUG_VER[] = "2.0.0";
 
-public plugin_natives(){
+public plugin_natives() {
     register_native("DG_RegisterBonus", "@Native_RegisterBonus");
 }
 
-public plugin_init(){
+public plugin_init() {
     register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");
 
     #if defined DEBUG
@@ -76,9 +74,10 @@ public plugin_init(){
     server_print("[%s v%s] loaded %d bonuses & %d gifts.", PLUG_NAME, PLUG_VER, TrieGetSize(Bonuses), ArraySize(Gifts));
 }
 
-public DG_OnGiftTouch_Pre(const UserId, const GiftId){
-    if(!ArraySize(Gifts))
+public DG_OnGiftTouch_Pre(const UserId, const GiftId) {
+    if (!ArraySize(Gifts)) {
         return DG_CONTINUE;
+    }
 
     new Gift = GetRandomGift();
 
@@ -91,12 +90,12 @@ public DG_OnGiftTouch_Pre(const UserId, const GiftId){
     return DG_STOP;
 }
 
-GetRandomGift(){
+GetRandomGift() {
     static GiftData[E_GiftData];
 
     #if defined ALLOW_MANAGE_GIFTS_AFTER_INIT
     new Chances = 0;
-    for(new i = 0; i < ArraySize(Gifts); i++){
+    for (new i = 0; i < ArraySize(Gifts); i++) {
         ArrayGetArray(Gifts, i, GiftData);
         Chances += GiftData[GD_Chance];
     }
@@ -105,16 +104,17 @@ GetRandomGift(){
     new Rnd = random_num(1, gChances);
     #endif
     
-    for(new i = 0; i < ArraySize(Gifts); i++){
+    for (new i = 0; i < ArraySize(Gifts); i++) {
         ArrayGetArray(Gifts, i, GiftData);
         Rnd -= GiftData[GD_Chance];
-        if(Rnd <= 0)
+        if (Rnd <= 0) {
             return i;
+        }
     }
     return -1;
 }
 
-UseBonus(const UserId, const BonusName[], const Trie:Params){
+UseBonus(const UserId, const BonusName[], const Trie:Params) {
     static BonusData[E_BonusData];
     TrieGetArray(Bonuses, BonusName, BonusData, E_BonusData);
 
@@ -122,7 +122,7 @@ UseBonus(const UserId, const BonusName[], const Trie:Params){
     ExecuteForward(BonusData[BD_Callback], ret, UserId, Params);
 }
 
-@Native_RegisterBonus(const PluginId, const ArgCnt){
+@Native_RegisterBonus(const PluginId, const ArgCnt) {
     enum {Arg_Name = 1, Arg_Callback, Arg_Params}
 
     new BonusData[E_BonusData], CallbackName[64];
@@ -130,7 +130,7 @@ UseBonus(const UserId, const BonusName[], const Trie:Params){
 
     get_string(Arg_Callback, CallbackName, charsmax(CallbackName));
     BonusData[BD_Callback] = CreateOneForward(PluginId, CallbackName, FP_CELL, FP_CELL);
-    if(BonusData[BD_Callback] < 0){
+    if (BonusData[BD_Callback] < 0) {
         log_error(ERR_INVALID_BONUS_CALLBACK, "Invalid bonus callback `%s`. Bonus `%s`.", CallbackName, BonusData[BD_Name]);
         return 0;
     }
@@ -139,7 +139,7 @@ UseBonus(const UserId, const BonusName[], const Trie:Params){
     log_amx("[DEBUG] [_RegisterBonus] [ArgCnt: %d] [>%d?]", ArgCnt, Arg_Params);
     #endif
 
-    if(ArgCnt > Arg_Params){
+    if (ArgCnt > Arg_Params) {
         BonusData[BD_Params] = ArrayCreate(E_BonusParam, 1);
         new Param[E_BonusParam];
 
@@ -147,7 +147,7 @@ UseBonus(const UserId, const BonusName[], const Trie:Params){
         log_amx("[DEBUG] [_RegisterBonus] [i: %d -> %d] [i+2]", Arg_Params, ArgCnt);
         #endif
 
-        for(new i = Arg_Params; i < ArgCnt; i += 2){
+        for (new i = Arg_Params; i < ArgCnt; i += 2) {
             get_string(i, Param[BP_Key], charsmax(Param[BP_Key]));
             Param[BP_Type] = ParamType:get_param_byref(i+1);
 
@@ -157,32 +157,33 @@ UseBonus(const UserId, const BonusName[], const Trie:Params){
 
             ArrayPushArray(BonusData[BD_Params], Param);
         }
+    } else {
+        BonusData[BD_Params] = Invalid_Array;
     }
-    else BonusData[BD_Params] = Invalid_Array;
 
     return TrieSetArray(Bonuses, BonusData[BD_Name], BonusData, E_BonusData);
 }
 
-LoadGifts(){
+LoadGifts() {
     new File[PLATFORM_MAX_PATH];
     get_localinfo("amxx_configsdir", File, charsmax(File));
     add(File, charsmax(File), "/plugins/DeathGift/Gifts.json");
-    if(!file_exists(File)){
+    if (!file_exists(File)) {
         log_amx("[ERROR] Config file '%s' not found", File);
         return;
     }
     
     new JSON:List = json_parse(File, true);
-    if(!json_is_array(List)){
+    if (!json_is_array(List)) {
         json_free(List);
         log_amx("[ERROR] Invalid config structure. File '%s'.", File);
         return;
     }
 
     new JSON:Item, JSON:Params;
-    for(new i = 0; i < json_array_get_count(List); i++){
+    for (new i = 0; i < json_array_get_count(List); i++) {
         Item = json_array_get_value(List, i);
-        if(!json_is_object(Item)){
+        if (!json_is_object(Item)) {
             json_free(Item);
             log_amx("[WARNING] Invalid config structure. File '%s', item %d.", File, i);
             continue;
@@ -192,8 +193,9 @@ LoadGifts(){
 
         json_object_get_string(Item, "Name", GiftData[GD_Name], charsmax(GiftData[GD_Name]));
         GiftData[GD_Chance] = json_object_get_number(Item, "Chance");
+
         json_object_get_string(Item, "Bonus", GiftData[GD_Bonus], charsmax(GiftData[GD_Bonus]));
-        if(!TrieKeyExists(Bonuses, GiftData[GD_Bonus])){
+        if (!TrieKeyExists(Bonuses, GiftData[GD_Bonus])) {
             log_amx("[WARNING] Undefined bonus `%s`. File `%s`, item %d.", GiftData[GD_Bonus], File, i);
             json_free(Item);
             continue;
@@ -203,37 +205,46 @@ LoadGifts(){
         TrieGetArray(Bonuses, GiftData[GD_Bonus], BonusData, E_BonusData);
         GiftData[GD_BonusParams] = TrieCreate();
 
-        if(BonusData[BD_Params] != Invalid_Array){
+        if (BonusData[BD_Params] != Invalid_Array) {
             Params = json_object_get_value(Item, "Params");
-            for(new j = 0; j < ArraySize(BonusData[BD_Params]); j++){
+            for (new j = 0; j < ArraySize(BonusData[BD_Params]); j++) {
                 new ParamData[E_BonusParam];
                 ArrayGetArray(BonusData[BD_Params], j, ParamData);
 
-                switch(ParamData[BP_Type]){
+                switch (ParamData[BP_Type]) {
                     case ptInteger: {
-                        if(!json_object_has_value(Params, ParamData[BP_Key], JSONNumber))
+                        if (!json_object_has_value(Params, ParamData[BP_Key], JSONNumber)) {
                             continue;
+                        }
+
                         TrieSetCell(GiftData[GD_BonusParams], ParamData[BP_Key], json_object_get_number(Params, ParamData[BP_Key]));
                     }
                     case ptFloat: {
-                        if(!json_object_has_value(Params, ParamData[BP_Key], JSONNumber))
+                        if (!json_object_has_value(Params, ParamData[BP_Key], JSONNumber)) {
                             continue;
+                        }
+
                         TrieSetCell(GiftData[GD_BonusParams], ParamData[BP_Key], json_object_get_real(Params, ParamData[BP_Key]));
                     }
                     case ptString: {
-                        if(!json_object_has_value(Params, ParamData[BP_Key], JSONString))
+                        if (!json_object_has_value(Params, ParamData[BP_Key], JSONString)) {
                             continue;
+                        }
+
                         new Str[128];
                         json_object_get_string(Params, ParamData[BP_Key], Str, charsmax(Str));
                         TrieSetString(GiftData[GD_BonusParams], ParamData[BP_Key], Str);
                     }
                     case ptBool: {
-                        if(!json_object_has_value(Params, ParamData[BP_Key], JSONBoolean))
+                        if (!json_object_has_value(Params, ParamData[BP_Key], JSONBoolean)) {
                             continue;
+                        }
+
                         TrieSetCell(GiftData[GD_BonusParams], ParamData[BP_Key], json_object_get_bool(Params, ParamData[BP_Key]));
                     }
                 }
             }
+            
             json_free(Params);
         }
 
@@ -241,7 +252,9 @@ LoadGifts(){
         #if !defined ALLOW_MANAGE_GIFTS_AFTER_INIT
             gChances += GiftData[GD_Chance];
         #endif
+
         json_free(Item);
     }
+
     json_free(List);
 }

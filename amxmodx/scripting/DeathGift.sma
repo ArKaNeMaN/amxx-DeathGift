@@ -7,14 +7,13 @@
 
 #pragma semicolon 1
 
-// #define DEBUG
-
 new const PLAYER_CLASSNAME[] = "player";
 new const CHAT_MSG_TPL[] = "^4[^3%s^4] ^1%L";
 new const LANG_STR[] = "%L";
-#define Lang(%1) fmt(LANG_STR,LANG_SERVER,%1)
+
+#define Lang(%1) fmt(LANG_STR, LANG_SERVER,%1)
 #define PDATA_SAFE 2
-#define ENT_VALID(%1) (pev_valid(%1)==PDATA_SAFE)
+#define ENT_VALID(%1) (pev_valid(%1) == PDATA_SAFE)
 
 new const Float:GIFT_SIZE[2][3] = {
     {-10.0, -10.0, -30.0},
@@ -29,7 +28,7 @@ new const TAKE_SOUND[] = "DeathGift/take.wav";
 #define ROTATE_SPEED 5.0
 #define THINK_DELAY 1.0
 
-enum E_Cvars{
+enum E_Cvars {
     Float:Cvar_DropRarity,
     Cvar_LifeTime,
     Cvar_Money[2],
@@ -39,7 +38,7 @@ enum E_Cvars{
 new Cvars[E_Cvars];
 #define Cvar(%1) Cvars[Cvar_%1]
 
-enum E_Fwds{
+enum E_Fwds {
     Fwd_GiftTouch_Pre,
     Fwd_GiftTouch_Post,
 
@@ -55,25 +54,29 @@ new Fwds[E_Fwds];
 new const PLUG_VER[] = "2.1.0";
 new const PLUG_NAME[] = "Death Gift";
 
-public plugin_natives(){
+public plugin_natives() {
     register_library("DeathGift");
 
     register_native("DG_SendGiftMsg", "@Native_SendGiftMsg");
 }
 
-public plugin_precache(){
+public plugin_precache() {
     register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");
     
-    if(file_exists(MODEL_PATH))
+    if (file_exists(MODEL_PATH)) {
         precache_model(MODEL_PATH);
-    else set_fail_state("[Model file not found (%s)]", MODEL_PATH);
+    } else {
+        set_fail_state("[Model file not found (%s)]", MODEL_PATH);
+    }
     
-    if(file_exists(fmt("sound/%s", TAKE_SOUND)))
+    if (file_exists(fmt("sound/%s", TAKE_SOUND))) {
         precache_sound(TAKE_SOUND);
-    else set_fail_state("[Take sound file not found (%s)]", TAKE_SOUND);
+    } else {
+        set_fail_state("[Take sound file not found (%s)]", TAKE_SOUND);
+    }
 }
 
-public plugin_init(){
+public plugin_init() {
     register_dictionary("DeathGift.ini");
 
     InitCvars();
@@ -88,7 +91,7 @@ public plugin_init(){
     server_print("[%s v%s] loaded.", PLUG_NAME, PLUG_VER);
 }
 
-InitCvars(){
+InitCvars() {
     bind_pcvar_float(create_cvar(
         "DG_DropRarity", "0.1",
         FCVAR_NONE, Lang("CVAR_DROP_RARITY"),
@@ -127,7 +130,7 @@ InitCvars(){
     AutoExecConfig(true, "Main", "DeathGift");
 }
 
-InitFwds(){
+InitFwds() {
     FwdRegP(GiftTouch_Pre, "DG_OnGiftTouch_Pre", [FP_CELL, FP_CELL]);
     FwdRegP(GiftTouch_Post, "DG_OnGiftTouch_Post", [FP_CELL, FP_CELL]);
     FwdRegP(GiftCreate_Pre, "DG_OnGiftCreate_Pre", [FP_CELL]);
@@ -136,14 +139,15 @@ InitFwds(){
 
 @Hook_RoundStart() {
     new iEnt = 0;
-    while(iEnt = find_ent_by_class(iEnt, GIFT_CLASSNAME)) {
+    while ((iEnt = find_ent_by_class(iEnt, GIFT_CLASSNAME)) != 0) {
         GiftDelete(iEnt);
     }
 }
 
-@Hook_GiftTouch(const GiftId, const UserId){
-    if(!is_user_alive(UserId))
+@Hook_GiftTouch(const GiftId, const UserId) {
+    if (!is_user_alive(UserId)) {
         return;
+    }
 
     emit_sound(GiftId, CHAN_VOICE, TAKE_SOUND, Cvar(SoundVolume), ATTN_NORM, 0, PITCH_NORM);
 
@@ -154,7 +158,7 @@ InitFwds(){
     new ret = DG_CONTINUE;
     FwdExecP(GiftTouch_Pre, ret, [UserId, GiftId]);
 
-    if(ret == DG_STOP){
+    if (ret == DG_STOP) {
         GiftDelete(GiftId);
         return;
     }
@@ -173,12 +177,12 @@ InitFwds(){
     GiftDelete(GiftId);
 }
 
-@Hook_PlayerKilled(victim, attacker, corpse){
+@Hook_PlayerKilled(victim, attacker, corpse) {
     #if defined DEBUG
     log_amx("[DEBUG] [pDeath] [%d]", PLUG_NAME, PLUG_VER, victim);
     #endif
 
-    if(RndDrop()){
+    if (RndDrop()) {
         #if defined DEBUG
         log_amx("[DEBUG] [pDeath] [%d] [Drop]", PLUG_NAME, PLUG_VER, victim);
         #endif
@@ -186,8 +190,9 @@ InitFwds(){
         new ret = DG_CONTINUE;
         FwdExecP(GiftCreate_Pre, ret, [victim]);
 
-        if(ret == DG_STOP)
+        if (ret == DG_STOP) {
             return;
+        }
 
         static Float:origin[3];
         pev(victim, pev_origin, origin);
@@ -195,28 +200,33 @@ InitFwds(){
 
         GiftCreate(origin);
     }
+
     #if defined DEBUG
     else log_amx("[DEBUG] [pDeath] [%d] [Not Drop]", PLUG_NAME, PLUG_VER, victim);
     #endif
 }
 
-@Task_GiftDelete(const TaskId){GiftDelete(TaskId);}
+@Task_GiftDelete(const TaskId) {
+    GiftDelete(TaskId);
+}
 
-GiftDelete(GiftId){
-    if(!ENT_VALID(GiftId))
+GiftDelete(GiftId) {
+    if (!ENT_VALID(GiftId)) {
         return;
+    }
 
     #if defined DEBUG
     log_amx("[DEBUG] [giftDelete]", PLUG_NAME, PLUG_VER);
     #endif
 
-    if(task_exists(GiftId))
+    if (task_exists(GiftId)) {
         remove_task(GiftId);
+    }
 
     remove_entity(GiftId);
 }
 
-GiftCreate(Float:origin[3]){
+GiftCreate(Float:origin[3]) {
     #if defined DEBUG
     log_amx("[DEBUG] [giftCreate]", PLUG_NAME, PLUG_VER);
     #endif
@@ -225,13 +235,15 @@ GiftCreate(Float:origin[3]){
     log_amx("[DEBUG] [giftCreate] [Fwd]", PLUG_NAME, PLUG_VER);
     #endif
 
-    static a;
-    if(!a)
-        a = engfunc(EngFunc_AllocString, "info_target");
-    static GiftId; GiftId = engfunc(EngFunc_CreateNamedEntity, a);
+    static iAllolcatedClassName;
+    if (!iAllolcatedClassName) {
+        iAllolcatedClassName = engfunc(EngFunc_AllocString, "info_target");
+    }
+    static GiftId; GiftId = engfunc(EngFunc_CreateNamedEntity, iAllolcatedClassName);
 
-    if(!pev_valid(GiftId))
+    if (!pev_valid(GiftId)) {
         return;
+    }
         
     #if defined DEBUG
     log_amx("[DEBUG] [giftCreate] [Fwd] [Create] [%d]", PLUG_NAME, PLUG_VER, GiftId);
@@ -249,19 +261,18 @@ GiftCreate(Float:origin[3]){
     set_pev(GiftId, pev_solid, SOLID_TRIGGER);
     SetEntSize(GiftId, GIFT_SIZE[0], GIFT_SIZE[1]);
     
-    static Float:vecAvelocity[3];				//
-    vecAvelocity[1] = ROTATE_SPEED * 10.0;		// Установка скорости вращения
-    set_pev(GiftId, pev_avelocity, vecAvelocity);	//
+    static Float:vecAvelocity[3];
+    vecAvelocity[1] = ROTATE_SPEED * 10.0;
+    set_pev(GiftId, pev_avelocity, vecAvelocity);
 
-    //static Float:vecVelocity[3];
-    //vecVelocity[2] = FLY_SPEED;
     set_pev(GiftId, pev_velocity, {0.0, 0.0, FLY_SPEED});
 
     set_pev(GiftId, pev_maxspeed, FLY_SPEED);
 
 
-    if(Cvar(LifeTime))
+    if (Cvar(LifeTime)) {
         set_task(float(Cvar(LifeTime)), "@Task_GiftDelete", GiftId);
+    }
     
     new ret;
     FwdExecP(GiftCreate_Post, ret, [GiftId]);
@@ -271,9 +282,10 @@ GiftCreate(Float:origin[3]){
     #endif
 }
 
-@Hook_GiftThink(const GiftId){
-    if(!ENT_VALID(GiftId))
+@Hook_GiftThink(const GiftId) {
+    if (!ENT_VALID(GiftId)) {
         return;
+    }
     
     set_pev(GiftId, pev_nextthink, get_gametime()+THINK_DELAY);
     
@@ -287,41 +299,42 @@ GiftCreate(Float:origin[3]){
     #if defined DEBUG
     log_amx("[DEBUG] [giftThink] [%d]", PLUG_NAME, PLUG_VER, GiftId);
     #endif
-    
-    return;
 }
 
-@Native_SendGiftMsg(pluginId, params){
+@Native_SendGiftMsg(pluginId, params) {
     enum {Arg_UserId = 1, Arg_GiftName}
 
     new UserId; UserId = get_param(Arg_UserId);
     new GiftName[64]; get_string(Arg_GiftName, GiftName, charsmax(GiftName));
 
-    if(!Cvar(MsgsForAll)){
-        if(equal(GiftName, ""))
+    if (!Cvar(MsgsForAll)) {
+        if (equal(GiftName, "")) {
             client_print_color(UserId,
                 print_team_default, CHAT_MSG_TPL,
                 CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE_EMPTY"
             );
-        else client_print_color(UserId,
+        } else {
+            client_print_color(UserId,
                 print_team_default, CHAT_MSG_TPL,
                 CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE", GiftName
             );
-    }
-    else{
-        if(equal(GiftName, ""))
+        }
+    } else {
+        if (equal(GiftName, "")) {
             client_print_color(0,
                 print_team_default, CHAT_MSG_TPL,
                 CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE_EMPTY_FORALL", UserId
             );
-        else client_print_color(0,
+        } else {
+            client_print_color(0,
                 print_team_default, CHAT_MSG_TPL,
                 CHAT_PREFIX, LANG_PLAYER, "GIFT_TAKE_FORALL", UserId, GiftName
             );
+        }
     }
 }
 
-SetEntSize(const Ent, const Float:Mins[3], const Float:Maxs[3]){
+SetEntSize(const Ent, const Float:Mins[3], const Float:Maxs[3]) {
     set_pev(Ent, pev_mins, Mins);
     set_pev(Ent, pev_maxs, Maxs);
     new Float:Size[3];
@@ -331,7 +344,7 @@ SetEntSize(const Ent, const Float:Mins[3], const Float:Maxs[3]){
     set_pev(Ent, pev_size, Size);
 }
 
-RndRange(const Range[]){
+RndRange(const Range[]) {
     return random_num(Range[0], Range[1]);
 }
 

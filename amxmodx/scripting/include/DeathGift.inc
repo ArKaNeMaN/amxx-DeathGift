@@ -97,10 +97,12 @@ native DG_RegisterBonus(const Name[], const Callback[], any:...);
 *
 * @return Integer value
 */
-stock DG_ReadParamInt(const Trie:Params, const Key[], const Default = 0){
+stock DG_ReadParamInt(const Trie:Params, const Key[], const Default = 0) {
     new Val = Default;
-    if(!TrieKeyExists(Params, Key))
+    if (!TrieKeyExists(Params, Key)) {
         return Val;
+    }
+    
     TrieGetCell(Params, Key, Val);
     return Val;
 }
@@ -114,10 +116,12 @@ stock DG_ReadParamInt(const Trie:Params, const Key[], const Default = 0){
 *
 * @return Float value
 */
-stock Float:DG_ReadParamFloat(const Trie:Params, const Key[], const Float:Default = 0.0){
+stock Float:DG_ReadParamFloat(const Trie:Params, const Key[], const Float:Default = 0.0) {
     new Float:Val = Default;
-    if(!TrieKeyExists(Params, Key))
+    if (!TrieKeyExists(Params, Key)) {
         return Default;
+    }
+
     TrieGetCell(Params, Key, Val);
     return Val;
 }
@@ -131,10 +135,12 @@ stock Float:DG_ReadParamFloat(const Trie:Params, const Key[], const Float:Defaul
 *
 * @return Boolean value
 */
-stock bool:DG_ReadParamBool(const Trie:Params, const Key[], const bool:Default = false){
+stock bool:DG_ReadParamBool(const Trie:Params, const Key[], const bool:Default = false) {
     new bool:Val = Default;
-    if(!TrieKeyExists(Params, Key))
+    if (!TrieKeyExists(Params, Key)) {
         return Val;
+    }
+
     TrieGetCell(Params, Key, Val);
     return Val;
 }
@@ -150,10 +156,12 @@ stock bool:DG_ReadParamBool(const Trie:Params, const Key[], const bool:Default =
 *
 * @return Number of cells written
 */
-stock DG_ReadParamString(const Trie:Params, const Key[], Buff[], Len, const Default[] = ""){
+stock DG_ReadParamString(const Trie:Params, const Key[], Buff[], Len, const Default[] = "") {
     new Size = formatex(Buff, Len, Default);
-    if(!TrieKeyExists(Params, Key))
+    if (!TrieKeyExists(Params, Key)) {
         return Size;
+    }
+
     TrieGetString(Params, Key, Buff, Len, Size);
     return Size;
 }

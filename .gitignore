@@ -1,3 +1,5 @@
 *.amxx
 *.zip
-*_old.sma
+.build
+plugins-*.ini
+local.build-config
