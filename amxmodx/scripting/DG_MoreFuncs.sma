@@ -304,7 +304,7 @@ new Float:pMultDmg[MAX_PLAYERS+1];
     pMultDmg[id] = 0.0;
 }
 
-@Hook_PlayerTakeDamage(victim, inflictor, attacker, damage, damagebits) {
+@Hook_PlayerTakeDamage(victim, inflictor, attacker, Float:damage, damagebits) {
     if (attacker < 1 || attacker > 32) {
         return HAM_IGNORED;
     }
