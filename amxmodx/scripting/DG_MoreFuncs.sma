@@ -31,7 +31,7 @@
 #endif
 
 new const PLUG_NAME[] = "[DG] More Funcs";
-new const PLUG_VER[] = "2.0.0";
+new const PLUG_VER[] = "2.0.1";
 
 public DG_OnBonusesInit() {
     register_plugin(PLUG_NAME, PLUG_VER, "ArKaNeMaN");
