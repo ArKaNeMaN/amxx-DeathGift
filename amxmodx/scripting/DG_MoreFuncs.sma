@@ -9,25 +9,18 @@
     #pragma loadlib DeathGift
 #endif
 
-#pragma semicolon 1
-
 // Настройки:
 
 #define USE_DOUBLE_JUMP // Двойной прыжок
 #define USE_DAMAGE_MULT	// Умножение урона
 
-//#define AES_EXP 		// Для опыта Advanced Exp. System [https://dev-cs.ru/threads/1462/ ]
-//#define AES_BONUS 	// Для бонусов Advanced Exp. System [https://dev-cs.ru/threads/1462/ ]
-//#define AES_V4 		// Поддержка старой версии AES
+// #define AES_EXP 		// Для опыта Advanced Exp. System [https://dev-cs.ru/threads/1462/ ]
+// #define AES_BONUS 	// Для бонусов Advanced Exp. System [https://dev-cs.ru/threads/1462/ ]
 
 #if defined AES_EXP || defined AES_BONUS
-    #if defined AES_V4
-        #include <aes_main>
-    #else
-        #include <aes_v>
-        #define aes_add_player_exp(%0,%1) aes_add_player_exp_f(%0, float(%1))
-        #define aes_add_player_bonus(%0,%1) aes_add_player_bonus_f(%0, %1)
-    #endif
+    #include <aes_v>
+    #define aes_add_player_exp(%0,%1) aes_add_player_exp_f(%0, float(%1))
+    #define aes_add_player_bonus(%0,%1) aes_add_player_bonus_f(%0, %1)
 #endif
 
 new const PLUG_NAME[] = "[DG] More Funcs";
@@ -45,7 +38,7 @@ public DG_OnBonusesInit() {
     #endif
 
     #if defined AES_EXP
-    DG_RegisterBonus("AesExp", "@Bonus_AesExp", "Exp", ptInteger);
+    DG_RegisterBonus("AesExp", "@Bonus_AesExp", "Exp", ptFloat);
     #endif
 
     #if defined USE_DOUBLE_JUMP
@@ -192,12 +185,12 @@ new pBurnDmg[MAX_PLAYERS+1];
 // Опыт и бонусы AES
 #if defined AES_EXP
 @Bonus_AesExp(const UserId, const Trie:p) {
-    aes_add_player_exp(id, DG_ReadParamInt(p, "Exp", 1));
+    aes_add_player_exp_f(UserId, DG_ReadParamFloat(p, "Exp", 1.0));
 }
 #endif
 #if defined AES_BONUS
 @Bonus_AesBonuses(const UserId, const Trie:p) {
-    aes_add_player_bonus(id, DG_ReadParamInt(p, "Bonuses", 1));
+    aes_add_player_bonus_f(UserId, DG_ReadParamInt(p, "Bonuses", 1));
 }
 #endif
 
