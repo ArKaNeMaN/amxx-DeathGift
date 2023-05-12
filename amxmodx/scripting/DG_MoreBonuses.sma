@@ -48,7 +48,7 @@ new gChances = 0;
 #endif
 
 new const PLUG_NAME[] = "[DG] More Bonuses";
-new const PLUG_VER[] = "2.0.0";
+new const PLUG_VER[] = DEATHGIFT_VERSION;
 
 public plugin_natives() {
     register_native("DG_RegisterBonus", "@Native_RegisterBonus");

@@ -51,8 +51,8 @@ new Fwds[E_Fwds];
 // #define FwdExec(%1,%2) ExecuteForward(Fwds[Fwd_%1],%2)
 // #define FwdReg(%1,%2) Fwds[Fwd_%1]=CreateMultiForward(%2,ET_STOP2)
 
-new const PLUG_VER[] = "2.1.0";
 new const PLUG_NAME[] = "Death Gift";
+new const PLUG_VER[] = DEATHGIFT_VERSION;
 
 public plugin_natives() {
     register_library("DeathGift");
