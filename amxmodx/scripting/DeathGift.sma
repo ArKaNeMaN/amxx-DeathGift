@@ -3,6 +3,7 @@
 #include <hamsandwich>
 #include <fakemeta>
 #include <engine>
+#include <reapi>
 #include <DeathGift>
 
 #pragma semicolon 1
@@ -14,6 +15,7 @@ new const LANG_STR[] = "%L";
 #define Lang(%1) fmt(LANG_STR, LANG_SERVER,%1)
 #define PDATA_SAFE 2
 #define ENT_VALID(%1) (pev_valid(%1) == PDATA_SAFE)
+#define GetRound() (get_member_game(m_iTotalRoundsPlayed)+1)
 
 new const Float:GIFT_SIZE[2][3] = {
     {-10.0, -10.0, -30.0},
@@ -29,6 +31,7 @@ new const TAKE_SOUND[] = "DeathGift/take.wav";
 #define THINK_DELAY 1.0
 
 enum E_Cvars {
+    Cvar_MinRound,
     Float:Cvar_DropRarity,
     Cvar_LifeTime,
     Cvar_Money[2],
@@ -92,6 +95,12 @@ public plugin_init() {
 }
 
 InitCvars() {
+    bind_pcvar_num(create_cvar(
+        "DG_MinRound", "2",
+        FCVAR_NONE, Lang("CVAR_MIN_ROUND"),
+        true, 1.0
+    ), Cvar(MinRound));
+
     bind_pcvar_float(create_cvar(
         "DG_DropRarity", "0.1",
         FCVAR_NONE, Lang("CVAR_DROP_RARITY"),
@@ -181,6 +190,10 @@ InitFwds() {
     #if defined DEBUG
     log_amx("[DEBUG] [pDeath] [%d]", PLUG_NAME, PLUG_VER, victim);
     #endif
+
+    if (GetRound() < Cvar(MinRound)) {
+        return;
+    }
 
     if (RndDrop()) {
         #if defined DEBUG
