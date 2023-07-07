@@ -37,6 +37,8 @@ enum E_Cvars {
     Cvar_Money[2],
     Float:Cvar_SoundVolume,
     bool:Cvar_MsgsForAll,
+    bool:Cvar_Glow_Use,
+    Cvar_Glow_Color[16],
 }
 new Cvars[E_Cvars];
 #define Cvar(%1) Cvars[Cvar_%1]
@@ -129,12 +131,22 @@ InitCvars() {
         true, 0.0,  true, 1.0
     ), Cvar(SoundVolume));
     
-
     bind_pcvar_num(create_cvar(
         "DG_MsgsForAll", "0",
         FCVAR_NONE, Lang("CVAR_MSGS_FOR_ALL"),
         true, 0.0,  true, 1.0
     ), Cvar(MsgsForAll));
+    
+    bind_pcvar_num(create_cvar(
+        "DG_Glow_Use", "0",
+        FCVAR_NONE, Lang("CVAR_GLOW_USE"),
+        true, 0.0,  true, 1.0
+    ), Cvar(Glow_Use));
+    
+    bind_pcvar_string(create_cvar(
+        "DG_Glow_Сolor", "255 255 255",
+        FCVAR_NONE, Lang("CVAR_GLOW_COLOR")
+    ), Cvar(Glow_Color), charsmax(Cvar(Glow_Color)));
     
     AutoExecConfig(true, "Main", "DeathGift");
 }
@@ -282,6 +294,14 @@ GiftCreate(Float:origin[3]) {
 
     set_pev(GiftId, pev_maxspeed, FLY_SPEED);
 
+    if (Cvar(Glow_Use)) {
+        new Color[3];
+        StrToColor(Cvar(Glow_Color), Color);
+        set_pev(GiftId, pev_renderfx, kRenderFxGlowShell);
+        set_pev(GiftId, pev_rendercolor, Color);
+        set_pev(GiftId, pev_rendermode, kRenderNormal);
+        set_pev(GiftId, pev_renderamt, 25);
+    }
 
     if (Cvar(LifeTime)) {
         set_task(float(Cvar(LifeTime)), "@Task_GiftDelete", GiftId);
@@ -361,7 +381,7 @@ RndRange(const Range[]) {
     return random_num(Range[0], Range[1]);
 }
 
-bool:RndDrop(){
+bool:RndDrop() {
     new rnd = random_num(1, floatround(1.0/Cvar(DropRarity)));
 
     #if defined DEBUG
@@ -369,4 +389,13 @@ bool:RndDrop(){
     #endif
 
     return (rnd == 1);
+}
+
+StrToColor(const Str[], Color[3]) {
+    new sRgb[3][4];
+    parse(Str, sRgb[0], charsmax(sRgb[]), sRgb[1], charsmax(sRgb[]), sRgb[2], charsmax(sRgb[]));
+
+    for (new i = 0; i < 3; i++) {
+        Color[i] = str_to_num(sRgb[i]);
+    }
 }
