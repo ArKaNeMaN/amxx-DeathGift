@@ -3,7 +3,7 @@
 #endif
 #define _deathgift_included
 
-#define DEATHGIFT_VERSION "2.1.1"
+#define DEATHGIFT_VERSION "2.2.0"
 
 #define DG_CONTINUE 0 /* Continue function execution */
 #define DG_STOP 1 /* abort function */
