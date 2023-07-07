@@ -31,6 +31,7 @@ public DG_OnBonusesInit() {
 
     #if defined _reapi_included
     DG_RegisterBonus("DropWeapon", "@Bonus_DropWeapon", "Slot", ptString);
+    DG_RegisterBonus("SilentSteps", "@Bonus_SilentSteps", "Duration", ptFloat);
     #endif
 
     #if defined AES_BONUS
@@ -85,6 +86,23 @@ public DG_OnBonusesInit() {
         "Blue", ptInteger,
         "Alpha", ptInteger
     );
+}
+
+#define TASK_OFFSET_FOOTSTEPS 1000
+
+public client_disconnected(UserId) {
+    remove_task(TASK_OFFSET_FOOTSTEPS + UserId);
+}
+
+@Bonus_SilentSteps(const UserId, const Trie:p) {
+    rg_set_user_footsteps(UserId, false);
+    set_task(DG_ReadParamFloat(p, "Duration", 10.0), "@Task_Footsteps", TASK_OFFSET_FOOTSTEPS + UserId);
+}
+
+@Task_Footsteps(const TaskId) {
+    if (is_user_connected(TaskId - TASK_OFFSET_FOOTSTEPS)) {
+        rg_set_user_footsteps(TaskId - TASK_OFFSET_FOOTSTEPS, true);
+    }
 }
 
 // Тестовый бонус
