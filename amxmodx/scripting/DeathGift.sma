@@ -173,7 +173,7 @@ InitFwds() {
     emit_sound(GiftId, CHAN_VOICE, TAKE_SOUND, Cvar(SoundVolume), ATTN_NORM, 0, PITCH_NORM);
 
     #if defined DEBUG
-    log_amx("[DEBUG] [giftTouch] [%d]", PLUG_NAME, PLUG_VER, UserId);
+    log_amx("[DEBUG] [giftTouch] [%d]", UserId);
     #endif
 
     new ret = DG_CONTINUE;
@@ -185,7 +185,7 @@ InitFwds() {
     }
 
     #if defined DEBUG
-    log_amx("[DEBUG] [giftTouch] [%d] [Fwd]", PLUG_NAME, PLUG_VER, UserId);
+    log_amx("[DEBUG] [giftTouch] [%d] [Fwd]", UserId);
     #endif
 
     new newMoney = RndRange(Cvar(Money));
@@ -200,7 +200,7 @@ InitFwds() {
 
 @Hook_PlayerKilled(victim, attacker, corpse) {
     #if defined DEBUG
-    log_amx("[DEBUG] [pDeath] [%d]", PLUG_NAME, PLUG_VER, victim);
+    log_amx("[DEBUG] [pDeath] [%d]", victim);
     #endif
 
     if (GetRound() < Cvar(MinRound)) {
@@ -209,7 +209,7 @@ InitFwds() {
 
     if (RndDrop()) {
         #if defined DEBUG
-        log_amx("[DEBUG] [pDeath] [%d] [Drop]", PLUG_NAME, PLUG_VER, victim);
+        log_amx("[DEBUG] [pDeath] [%d] [Drop]", victim);
         #endif
 
         new ret = DG_CONTINUE;
@@ -227,7 +227,7 @@ InitFwds() {
     }
 
     #if defined DEBUG
-    else log_amx("[DEBUG] [pDeath] [%d] [Not Drop]", PLUG_NAME, PLUG_VER, victim);
+    else log_amx("[DEBUG] [pDeath] [%d] [Not Drop]", victim);
     #endif
 }
 
@@ -241,7 +241,7 @@ GiftDelete(GiftId) {
     }
 
     #if defined DEBUG
-    log_amx("[DEBUG] [giftDelete]", PLUG_NAME, PLUG_VER);
+    log_amx("[DEBUG] [giftDelete]");
     #endif
 
     if (task_exists(GiftId)) {
@@ -253,11 +253,11 @@ GiftDelete(GiftId) {
 
 GiftCreate(Float:origin[3]) {
     #if defined DEBUG
-    log_amx("[DEBUG] [giftCreate]", PLUG_NAME, PLUG_VER);
+    log_amx("[DEBUG] [giftCreate]");
     #endif
 
     #if defined DEBUG
-    log_amx("[DEBUG] [giftCreate] [Fwd]", PLUG_NAME, PLUG_VER);
+    log_amx("[DEBUG] [giftCreate] [Fwd]");
     #endif
 
     static iAllolcatedClassName;
@@ -271,7 +271,7 @@ GiftCreate(Float:origin[3]) {
     }
         
     #if defined DEBUG
-    log_amx("[DEBUG] [giftCreate] [Fwd] [Create] [%d]", PLUG_NAME, PLUG_VER, GiftId);
+    log_amx("[DEBUG] [giftCreate] [Fwd] [Create] [%d]", GiftId);
     #endif
 
     set_pev(GiftId, pev_classname, GIFT_CLASSNAME);
@@ -295,12 +295,13 @@ GiftCreate(Float:origin[3]) {
     set_pev(GiftId, pev_maxspeed, FLY_SPEED);
 
     if (Cvar(Glow_Use)) {
-        new Color[3];
+        new Float:Color[3];
         StrToColor(Cvar(Glow_Color), Color);
-        set_pev(GiftId, pev_renderfx, kRenderFxGlowShell);
-        set_pev(GiftId, pev_rendercolor, Color);
-        set_pev(GiftId, pev_rendermode, kRenderNormal);
-        set_pev(GiftId, pev_renderamt, 25);
+
+        rg_set_rendering(GiftId, kRenderFxGlowShell, Color, kRenderNormal, 128.0);
+        #if defined DEBUG
+        log_amx("[DEBUG] [giftCreate] [Glow_Use = true] [Color = %.0f %.0f %.0f]", Color[0], Color[1], Color[2]);
+        #endif
     }
 
     if (Cvar(LifeTime)) {
@@ -311,7 +312,7 @@ GiftCreate(Float:origin[3]) {
     FwdExecP(GiftCreate_Post, ret, [GiftId]);
     
     #if defined DEBUG
-    log_amx("[DEBUG] [giftCreate] [Fwd] [Created] [%d]", PLUG_NAME, PLUG_VER, GiftId);
+    log_amx("[DEBUG] [giftCreate] [Fwd] [Created] [%d]", GiftId);
     #endif
 }
 
@@ -330,7 +331,7 @@ GiftCreate(Float:origin[3]) {
     set_pev(GiftId, pev_maxspeed, -fFlyUp);
     
     #if defined DEBUG
-    log_amx("[DEBUG] [giftThink] [%d]", PLUG_NAME, PLUG_VER, GiftId);
+    log_amx("[DEBUG] [giftThink] [%d]", GiftId);
     #endif
 }
 
@@ -385,17 +386,24 @@ bool:RndDrop() {
     new rnd = random_num(1, floatround(1.0/Cvar(DropRarity)));
 
     #if defined DEBUG
-    log_amx("[DEBUG] [RndDrop] [1, %d] [%d]", PLUG_NAME, PLUG_VER, floatround(1.0/Cvar(DropRarity)), rnd);
+    log_amx("[DEBUG] [RndDrop] [1, %d] [%d]", floatround(1.0/Cvar(DropRarity)), rnd);
     #endif
 
     return (rnd == 1);
 }
 
-StrToColor(const Str[], Color[3]) {
+StrToColor(const Str[], Float:Color[3]) {
     new sRgb[3][4];
     parse(Str, sRgb[0], charsmax(sRgb[]), sRgb[1], charsmax(sRgb[]), sRgb[2], charsmax(sRgb[]));
 
     for (new i = 0; i < 3; i++) {
-        Color[i] = str_to_num(sRgb[i]);
+        Color[i] = str_to_float(sRgb[i]);
     }
+}
+
+rg_set_rendering(id, iRenderFx = kRenderFxNone, Float:fRgb[3], iRender = kRenderNormal, Float:flAmount = 0.0) {
+    set_entvar(id, var_renderfx, iRenderFx);
+    set_entvar(id, var_rendercolor, fRgb);
+    set_entvar(id, var_rendermode, iRender);
+    set_entvar(id, var_renderamt, flAmount);
 }
