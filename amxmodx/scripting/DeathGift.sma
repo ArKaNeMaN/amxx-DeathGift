@@ -39,6 +39,8 @@ enum E_Cvars {
     bool:Cvar_MsgsForAll,
     bool:Cvar_Glow_Use,
     Cvar_Glow_Color[16],
+    bool:Cvar_ForceOnground,
+    bool:Cvar_LevitationEffect,
 }
 new Cvars[E_Cvars];
 #define Cvar(%1) Cvars[Cvar_%1]
@@ -147,6 +149,18 @@ InitCvars() {
         "DG_Glow_Сolor", "255 255 255",
         FCVAR_NONE, Lang("CVAR_GLOW_COLOR")
     ), Cvar(Glow_Color), charsmax(Cvar(Glow_Color)));
+    
+    bind_pcvar_num(create_cvar(
+        "DG_ForceOnground", "0",
+        FCVAR_NONE, Lang("CVAR_FORCE_ONGROUND"),
+        true, 0.0,  true, 1.0
+    ), Cvar(ForceOnground));
+    
+    bind_pcvar_num(create_cvar(
+        "DG_LevitationEffect", "1",
+        FCVAR_NONE, Lang("CVAR_LEVITATION_EFFECT"),
+        true, 0.0,  true, 1.0
+    ), Cvar(LevitationEffect));
     
     AutoExecConfig(true, "Main", "DeathGift");
 }
@@ -280,19 +294,21 @@ GiftCreate(Float:origin[3]) {
 
     ExecuteHam(Ham_Spawn, GiftId);
 
-    set_pev(GiftId, pev_nextthink, get_gametime()+THINK_DELAY);
-
     set_pev(GiftId, pev_movetype, MOVETYPE_NOCLIP);
     set_pev(GiftId, pev_solid, SOLID_TRIGGER);
     SetEntSize(GiftId, GIFT_SIZE[0], GIFT_SIZE[1]);
-    
-    static Float:vecAvelocity[3];
-    vecAvelocity[1] = ROTATE_SPEED * 10.0;
-    set_pev(GiftId, pev_avelocity, vecAvelocity);
 
-    set_pev(GiftId, pev_velocity, {0.0, 0.0, FLY_SPEED});
+    if (Cvar(LevitationEffect)) {
+        set_pev(GiftId, pev_nextthink, get_gametime() + THINK_DELAY);
 
-    set_pev(GiftId, pev_maxspeed, FLY_SPEED);
+        static Float:vecAvelocity[3];
+        vecAvelocity[1] = ROTATE_SPEED * 10.0;
+        set_pev(GiftId, pev_avelocity, vecAvelocity);
+
+        set_pev(GiftId, pev_velocity, {0.0, 0.0, FLY_SPEED});
+
+        set_pev(GiftId, pev_maxspeed, FLY_SPEED);
+    }    
 
     if (Cvar(Glow_Use)) {
         new Float:Color[3];
@@ -306,6 +322,10 @@ GiftCreate(Float:origin[3]) {
 
     if (Cvar(LifeTime)) {
         set_task(float(Cvar(LifeTime)), "@Task_GiftDelete", GiftId);
+    }
+
+    if (Cvar(ForceOnground)) {
+        drop_to_floor(GiftId);
     }
     
     new ret;
