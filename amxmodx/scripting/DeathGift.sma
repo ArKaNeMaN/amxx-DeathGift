@@ -18,8 +18,8 @@ new const LANG_STR[] = "%L";
 #define GetRound() (get_member_game(m_iTotalRoundsPlayed)+1)
 
 new const Float:GIFT_SIZE[2][3] = {
-    {-10.0, -10.0, -30.0},
-    {10.0, 10.0, 30.0},
+    {-10.0, -10.0, 0.0},
+    {10.0, 10.0, 60.0},
 };
 
 new const GIFT_CLASSNAME[] = "DeathGift";
@@ -29,6 +29,7 @@ new const TAKE_SOUND[] = "DeathGift/take.wav";
 #define FLY_SPEED 5.0
 #define ROTATE_SPEED 5.0
 #define THINK_DELAY 1.0
+// #define GIFT_Y_OFFSET -30.0
 
 enum E_Cvars {
     Cvar_MinRound,
@@ -39,7 +40,6 @@ enum E_Cvars {
     bool:Cvar_MsgsForAll,
     bool:Cvar_Glow_Use,
     Cvar_Glow_Color[16],
-    bool:Cvar_ForceOnground,
     bool:Cvar_LevitationEffect,
 }
 new Cvars[E_Cvars];
@@ -151,12 +151,6 @@ InitCvars() {
     ), Cvar(Glow_Color), charsmax(Cvar(Glow_Color)));
     
     bind_pcvar_num(create_cvar(
-        "DG_ForceOnground", "0",
-        FCVAR_NONE, Lang("CVAR_FORCE_ONGROUND"),
-        true, 0.0,  true, 1.0
-    ), Cvar(ForceOnground));
-    
-    bind_pcvar_num(create_cvar(
         "DG_LevitationEffect", "1",
         FCVAR_NONE, Lang("CVAR_LEVITATION_EFFECT"),
         true, 0.0,  true, 1.0
@@ -234,8 +228,15 @@ InitFwds() {
         }
 
         static Float:origin[3];
-        pev(victim, pev_origin, origin);
-        origin[2] -= 25.0;
+        get_entvar(victim, var_origin, origin);
+
+        new Float:fPlayerMins[3];
+        get_entvar(victim, var_mins, fPlayerMins);
+        origin[2] += fPlayerMins[2];
+
+        #if defined GIFT_Y_OFFSET
+        origin[2] += GIFT_Y_OFFSET;
+        #endif
 
         GiftCreate(origin);
     }
@@ -270,45 +271,41 @@ GiftCreate(Float:origin[3]) {
     log_amx("[DEBUG] [giftCreate]");
     #endif
 
-    #if defined DEBUG
-    log_amx("[DEBUG] [giftCreate] [Fwd]");
-    #endif
-
-    static iAllolcatedClassName;
-    if (!iAllolcatedClassName) {
-        iAllolcatedClassName = engfunc(EngFunc_AllocString, "info_target");
-    }
-    static GiftId; GiftId = engfunc(EngFunc_CreateNamedEntity, iAllolcatedClassName);
-
-    if (!pev_valid(GiftId)) {
+    new GiftId = rg_create_entity("info_target", true);
+    if (!is_entity(GiftId)) {
+        log_amx("[WARNING] Can\'t create gift entity.");
         return;
     }
-        
-    #if defined DEBUG
-    log_amx("[DEBUG] [giftCreate] [Fwd] [Create] [%d]", GiftId);
-    #endif
 
-    set_pev(GiftId, pev_classname, GIFT_CLASSNAME);
+    set_entvar(GiftId, var_classname, GIFT_CLASSNAME);
     engfunc(EngFunc_SetModel, GiftId, MODEL_PATH);
-    set_pev(GiftId, pev_origin, origin);
+    
 
     ExecuteHam(Ham_Spawn, GiftId);
 
-    set_pev(GiftId, pev_movetype, MOVETYPE_NOCLIP);
-    set_pev(GiftId, pev_solid, SOLID_TRIGGER);
+    set_entvar(GiftId, var_solid, SOLID_TRIGGER);
     SetEntSize(GiftId, GIFT_SIZE[0], GIFT_SIZE[1]);
 
     if (Cvar(LevitationEffect)) {
-        set_pev(GiftId, pev_nextthink, get_gametime() + THINK_DELAY);
+        set_entvar(GiftId, var_nextthink, get_gametime() + THINK_DELAY);
 
         static Float:vecAvelocity[3];
         vecAvelocity[1] = ROTATE_SPEED * 10.0;
-        set_pev(GiftId, pev_avelocity, vecAvelocity);
+        set_entvar(GiftId, var_avelocity, vecAvelocity);
 
-        set_pev(GiftId, pev_velocity, {0.0, 0.0, FLY_SPEED});
+        set_entvar(GiftId, var_velocity, {0.0, 0.0, FLY_SPEED});
+        set_entvar(GiftId, var_maxspeed, FLY_SPEED);
 
-        set_pev(GiftId, pev_maxspeed, FLY_SPEED);
-    }    
+        origin[2] += 5.0;
+        set_entvar(GiftId, var_movetype, MOVETYPE_FLY);
+    }
+    
+    set_entvar(GiftId, var_origin, origin);
+
+    if (!Cvar(LevitationEffect)) {
+        engfunc(EngFunc_DropToFloor, GiftId);
+        set_entvar(GiftId, var_movetype, MOVETYPE_TOSS);
+    }
 
     if (Cvar(Glow_Use)) {
         new Float:Color[3];
@@ -323,10 +320,6 @@ GiftCreate(Float:origin[3]) {
     if (Cvar(LifeTime)) {
         set_task(float(Cvar(LifeTime)), "@Task_GiftDelete", GiftId);
     }
-
-    if (Cvar(ForceOnground)) {
-        drop_to_floor(GiftId);
-    }
     
     new ret;
     FwdExecP(GiftCreate_Post, ret, [GiftId]);
@@ -337,18 +330,18 @@ GiftCreate(Float:origin[3]) {
 }
 
 @Hook_GiftThink(const GiftId) {
-    if (!ENT_VALID(GiftId)) {
+    if (!is_entity(GiftId)) {
         return;
     }
     
-    set_pev(GiftId, pev_nextthink, get_gametime()+THINK_DELAY);
+    set_entvar(GiftId, var_nextthink, get_gametime()+THINK_DELAY);
     
     static Float:vecVelocity[3], Float:fFlyUp;
-    pev(GiftId, pev_maxspeed, fFlyUp);
+    get_entvar(GiftId, var_maxspeed, fFlyUp);
     vecVelocity[2] = fFlyUp;
 
-    set_pev(GiftId, pev_velocity, vecVelocity);
-    set_pev(GiftId, pev_maxspeed, -fFlyUp);
+    set_entvar(GiftId, var_velocity, vecVelocity);
+    set_entvar(GiftId, var_maxspeed, -fFlyUp);
     
     #if defined DEBUG
     log_amx("[DEBUG] [giftThink] [%d]", GiftId);
@@ -358,8 +351,9 @@ GiftCreate(Float:origin[3]) {
 @Native_SendGiftMsg(pluginId, params) {
     enum {Arg_UserId = 1, Arg_GiftName}
 
-    new UserId; UserId = get_param(Arg_UserId);
-    new GiftName[64]; get_string(Arg_GiftName, GiftName, charsmax(GiftName));
+    new UserId = get_param(Arg_UserId);
+    new GiftName[64];
+    get_string(Arg_GiftName, GiftName, charsmax(GiftName));
 
     if (!Cvar(MsgsForAll)) {
         if (equal(GiftName, "")) {
@@ -388,14 +382,14 @@ GiftCreate(Float:origin[3]) {
     }
 }
 
-SetEntSize(const Ent, const Float:Mins[3], const Float:Maxs[3]) {
-    set_pev(Ent, pev_mins, Mins);
-    set_pev(Ent, pev_maxs, Maxs);
-    new Float:Size[3];
-    Size[0] = Mins[0] + Maxs[0];
-    Size[1] = Mins[1] + Maxs[1];
-    Size[2] = Mins[2] + Maxs[2];
-    set_pev(Ent, pev_size, Size);
+SetEntSize(const EntId, const Float:fMins[3], const Float:fMaxs[3]) {
+    set_entvar(EntId, var_mins, fMins);
+    set_entvar(EntId, var_maxs, fMaxs);
+    static Float:fSize[3];
+    fSize[0] = fMins[0] + fMaxs[0];
+    fSize[1] = fMins[1] + fMaxs[1];
+    fSize[2] = fMins[2] + fMaxs[2];
+    set_entvar(EntId, var_size, fSize);
 }
 
 RndRange(const Range[]) {
