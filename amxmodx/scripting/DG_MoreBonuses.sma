@@ -180,7 +180,7 @@ LoadGifts() {
         return;
     }
 
-    new JSON:Item, JSON:Params;
+    new JSON:Item;
     for (new i = 0; i < json_array_get_count(List); i++) {
         Item = json_array_get_value(List, i);
         if (!json_is_object(Item)) {
@@ -206,41 +206,45 @@ LoadGifts() {
         GiftData[GD_BonusParams] = TrieCreate();
 
         if (BonusData[BD_Params] != Invalid_Array) {
-            Params = json_object_get_value(Item, "Params");
-            for (new j = 0; j < ArraySize(BonusData[BD_Params]); j++) {
-                new ParamData[E_BonusParam];
-                ArrayGetArray(BonusData[BD_Params], j, ParamData);
+            new JSON:Params = json_object_get_value(Item, "Params");
+            if (!json_object_has_value(Item, "Params", JSONObject)) {
+                log_amx("[WARNING] Params for gift №%d not specified.", i);
+            } else {
+                for (new j = 0; j < ArraySize(BonusData[BD_Params]); j++) {
+                    new ParamData[E_BonusParam];
+                    ArrayGetArray(BonusData[BD_Params], j, ParamData);
 
-                switch (ParamData[BP_Type]) {
-                    case ptInteger: {
-                        if (!json_object_has_value(Params, ParamData[BP_Key], JSONNumber)) {
-                            continue;
+                    switch (ParamData[BP_Type]) {
+                        case ptInteger: {
+                            if (!json_object_has_value(Params, ParamData[BP_Key], JSONNumber)) {
+                                continue;
+                            }
+
+                            TrieSetCell(GiftData[GD_BonusParams], ParamData[BP_Key], json_object_get_number(Params, ParamData[BP_Key]));
                         }
+                        case ptFloat: {
+                            if (!json_object_has_value(Params, ParamData[BP_Key], JSONNumber)) {
+                                continue;
+                            }
 
-                        TrieSetCell(GiftData[GD_BonusParams], ParamData[BP_Key], json_object_get_number(Params, ParamData[BP_Key]));
-                    }
-                    case ptFloat: {
-                        if (!json_object_has_value(Params, ParamData[BP_Key], JSONNumber)) {
-                            continue;
+                            TrieSetCell(GiftData[GD_BonusParams], ParamData[BP_Key], json_object_get_real(Params, ParamData[BP_Key]));
                         }
+                        case ptString: {
+                            if (!json_object_has_value(Params, ParamData[BP_Key], JSONString)) {
+                                continue;
+                            }
 
-                        TrieSetCell(GiftData[GD_BonusParams], ParamData[BP_Key], json_object_get_real(Params, ParamData[BP_Key]));
-                    }
-                    case ptString: {
-                        if (!json_object_has_value(Params, ParamData[BP_Key], JSONString)) {
-                            continue;
+                            new Str[128];
+                            json_object_get_string(Params, ParamData[BP_Key], Str, charsmax(Str));
+                            TrieSetString(GiftData[GD_BonusParams], ParamData[BP_Key], Str);
                         }
+                        case ptBool: {
+                            if (!json_object_has_value(Params, ParamData[BP_Key], JSONBoolean)) {
+                                continue;
+                            }
 
-                        new Str[128];
-                        json_object_get_string(Params, ParamData[BP_Key], Str, charsmax(Str));
-                        TrieSetString(GiftData[GD_BonusParams], ParamData[BP_Key], Str);
-                    }
-                    case ptBool: {
-                        if (!json_object_has_value(Params, ParamData[BP_Key], JSONBoolean)) {
-                            continue;
+                            TrieSetCell(GiftData[GD_BonusParams], ParamData[BP_Key], json_object_get_bool(Params, ParamData[BP_Key]));
                         }
-
-                        TrieSetCell(GiftData[GD_BonusParams], ParamData[BP_Key], json_object_get_bool(Params, ParamData[BP_Key]));
                     }
                 }
             }
